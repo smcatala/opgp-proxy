@@ -570,17 +570,11 @@ interface ConcealableKeySpec extends PublishableKeySpec {
  * add all prototype properties of {sources} constructors
  * onto the {target} constructor prototype.
  * constructor properties are excluded.
- * @param  {any} target
- * @param  {any[]} sources
+ * @param  {Function} target
+ * @param  {Function[]} ...sources
  */
-function mixin (target: Function, sources: Function[]): any {
-    sources.forEach(source => {
-        Object.getOwnPropertyNames(source.prototype)
-        .filter(name => name !== 'constructor')
-        .forEach(name => {
-            target.prototype[name] = source.prototype[name];
-        })
-    })
+function mixin (target: Function, ...sources: Function[]): any {
+    Object.assign(target.prototype, ...sources.map(source => source.prototype))
 }
 
 
