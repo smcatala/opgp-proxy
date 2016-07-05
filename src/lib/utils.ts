@@ -40,7 +40,7 @@ export function mixin (target: Function, ...sources: Function[]): any {
  *
  * @param  {Function} ctor subclass constructor *mutated by this function*
  */
-export function fixClass (ctor: Function) {
+export function fixSubclass (ctor: Function) {
   Object.defineProperty(ctor.prototype, 'constructor', {
       enumerable: false
   })

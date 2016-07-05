@@ -22,7 +22,7 @@ import {
   BehaviorSubject,
   Observer
 } from '@reactivex/rxjs'
-import { mixin, fixClass } from './lib/utils'
+import { mixin, fixSubclass } from './lib/utils'
 
 /**
  * @public
@@ -391,7 +391,7 @@ class PublicAuthenticatingKey extends ExposableKey implements Verifiable {
   }
 }
 
-fixClass(PublicAuthenticatingKey)
+fixSubclass(PublicAuthenticatingKey)
 
 class PublicCodingKey extends ExposableKey implements Encodable {
   /**
@@ -406,7 +406,7 @@ class PublicCodingKey extends ExposableKey implements Encodable {
   }
 }
 
-fixClass(PublicCodingKey)
+fixSubclass(PublicCodingKey)
 
 class PublicUniversalKey extends ExposableKey
 implements Verifiable, Encodable {
@@ -438,7 +438,7 @@ implements Verifiable, Encodable {
 	}
 }
 
-fixClass(PublicUniversalKey)
+fixSubclass(PublicUniversalKey)
 
 mixin (PublicUniversalKey, PublicAuthenticatingKey, PublicCodingKey)
 
@@ -479,7 +479,7 @@ implements Concealable<P> {
   }
 }
 
-fixClass(ConcealableKey)
+fixSubclass(ConcealableKey)
 
 class PrivateAuthenticatingKey<P extends Exposable & Verifiable>
 extends ConcealableKey<P>
@@ -497,7 +497,7 @@ implements Signable {
 	}
 }
 
-fixClass(PrivateAuthenticatingKey)
+fixSubclass(PrivateAuthenticatingKey)
 
 class PrivateCodingKey<P extends Exposable & Encodable>
 extends ConcealableKey<P>
@@ -515,7 +515,7 @@ implements Decodable {
 	}
 }
 
-fixClass(PrivateCodingKey)
+fixSubclass(PrivateCodingKey)
 
 class PrivateUniversalKey<P extends Exposable & Verifiable & Encodable>
 extends ConcealableKey<P>
@@ -537,7 +537,7 @@ implements Signable, Decodable {
 	}
 }
 
-fixClass(PrivateUniversalKey)
+fixSubclass(PrivateUniversalKey)
 
 mixin(PrivateUniversalKey, PrivateAuthenticatingKey, PrivateCodingKey)
 
