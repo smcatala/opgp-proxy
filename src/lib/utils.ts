@@ -33,12 +33,15 @@ export function mixin (target: Function, ...sources: Function[]): any {
  * * configurable: false
  * * writable: false
  *
+ * https://github.com/Microsoft/TypeScript/issues/1601
  * In ECMAScript 2015, the constructor property
  * on class (and subclass) prototypes _is not_ enumerable by default.
- * However, in Typescript compiled to ES5, the constructor property
- * on subclass prototypes _is_ enumerable.
+ * However, in Typescript transpiled to ECMAScript,
+ * the constructor property on subclass prototypes _is_ enumerable.
  * This function fixes this discrepancy.
- * Additionally, it renders that property immutable.
+ *
+ * Additionally, this function renders the 'constructor' property
+ * on the prototype of the given class {ctor} immutable.
  * @param  {Function} ctor class constructor *mutated by this function*
  */
 export function fixClass (ctor: Function) {
