@@ -22,6 +22,7 @@ import {
   BehaviorSubject,
   Observer
 } from '@reactivex/rxjs'
+import { mixin, fixClass } from './lib/utils'
 
 /**
  * @public
@@ -376,6 +377,8 @@ class ExposableKey implements Exposable {
   protected _isAuthKey : boolean
 }
 
+fixClass(ExposableKey)
+
 class PublicAuthenticatingKey extends ExposableKey implements Verifiable {
   /**
    * @public
@@ -390,6 +393,8 @@ class PublicAuthenticatingKey extends ExposableKey implements Verifiable {
   }
 }
 
+fixClass(PublicAuthenticatingKey)
+
 class PublicCodingKey extends ExposableKey implements Encodable {
   /**
    * @public
@@ -402,6 +407,8 @@ class PublicCodingKey extends ExposableKey implements Encodable {
     super(spec)
   }
 }
+
+fixClass(PublicCodingKey)
 
 class PublicUniversalKey extends ExposableKey
 implements Verifiable, Encodable {
@@ -433,7 +440,9 @@ implements Verifiable, Encodable {
 	}
 }
 
-mixin (PublicUniversalKey, [ PublicAuthenticatingKey, PublicCodingKey ])
+fixClass(PublicUniversalKey)
+
+mixin (PublicUniversalKey, PublicAuthenticatingKey, PublicCodingKey)
 
 class ConcealableKey<P extends Publishable>
 extends ExposableKey
@@ -472,6 +481,8 @@ implements Concealable<P> {
   }
 }
 
+fixClass(ConcealableKey)
+
 class PrivateAuthenticatingKey<P extends Exposable & Verifiable>
 extends ConcealableKey<P>
 implements Signable {
@@ -488,6 +499,8 @@ implements Signable {
 	}
 }
 
+fixClass(PrivateAuthenticatingKey)
+
 class PrivateCodingKey<P extends Exposable & Encodable>
 extends ConcealableKey<P>
 implements Decodable {
@@ -503,6 +516,8 @@ implements Decodable {
 		super(spec)
 	}
 }
+
+fixClass(PrivateCodingKey)
 
 class PrivateUniversalKey<P extends Exposable & Verifiable & Encodable>
 extends ConcealableKey<P>
@@ -524,7 +539,9 @@ implements Signable, Decodable {
 	}
 }
 
-mixin(PrivateUniversalKey, [ PrivateAuthenticatingKey, PrivateCodingKey ])
+fixClass(PrivateUniversalKey)
+
+mixin(PrivateUniversalKey, PrivateAuthenticatingKey, PrivateCodingKey)
 
 /**
  * @private
@@ -565,18 +582,6 @@ interface ConcealableKeySpec extends PublishableKeySpec {
   publicKey: PublishableKeySpec,
   isLocked: boolean
 }
-
-/** TODO replace this placeholder with a corresponding import
- * add all prototype properties of {sources} constructors
- * onto the {target} constructor prototype.
- * constructor properties are excluded.
- * @param  {Function} target
- * @param  {Function[]} ...sources
- */
-function mixin (target: Function, ...sources: Function[]): any {
-    Object.assign(target.prototype, ...sources.map(source => source.prototype))
-}
-
 
 /**
  * @public
