@@ -22,6 +22,7 @@ import {
   BehaviorSubject,
   Observer
 } from '@reactivex/rxjs'
+import { fixSubclass } from './lib/utils'
 import { getOpgpKey, OpgpKey } from './opgpkey'
 
 export { OpgpKey }
@@ -140,6 +141,8 @@ class OpgpKeyringClass extends Map<string,OpgpKey> implements OpgpKeyring {
 
   private _armor: string
 }
+
+fixSubclass(OpgpKeyringClass)
 
 /**
  * @private

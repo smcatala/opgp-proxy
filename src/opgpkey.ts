@@ -377,8 +377,6 @@ class ExposableKey implements Exposable {
   protected _isAuthKey : boolean
 }
 
-fixClass(ExposableKey)
-
 class PublicAuthenticatingKey extends ExposableKey implements Verifiable {
   /**
    * @public

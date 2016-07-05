@@ -26,12 +26,10 @@ export function mixin (target: Function, ...sources: Function[]): any {
 }
 
 /**
- * sets the properties of the 'constructor' property
+ * sets the `enumerable` property of the 'constructor' property
  * of the prototype of the given {ctor} constructor
- * to the following:
+ * to false:
  * * enumerable: false
- * * configurable: false
- * * writable: false
  *
  * https://github.com/Microsoft/TypeScript/issues/1601
  * In ECMAScript 2015, the constructor property
@@ -40,14 +38,10 @@ export function mixin (target: Function, ...sources: Function[]): any {
  * the constructor property on subclass prototypes _is_ enumerable.
  * This function fixes this discrepancy.
  *
- * Additionally, this function renders the 'constructor' property
- * on the prototype of the given class {ctor} immutable.
- * @param  {Function} ctor class constructor *mutated by this function*
+ * @param  {Function} ctor subclass constructor *mutated by this function*
  */
 export function fixClass (ctor: Function) {
   Object.defineProperty(ctor.prototype, 'constructor', {
-      enumerable: false,
-      configurable: false,
-      writable: false
+      enumerable: false
   })
 }
