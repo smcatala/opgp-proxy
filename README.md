@@ -3,10 +3,16 @@
 [![Join the chat at https://gitter.im/ZenyWay/opgp-proxy](https://badges.gitter.im/ZenyWay/opgp-proxy.svg)](https://gitter.im/ZenyWay/opgp-proxy?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 abstracting proxy for an [openpgp](https://openpgpjs.org/) instance, isolated
-in a web worker.
-cryptographic material never leaves the worker thread,
-is only temporarily instantiated,
-and is abstracted as temporarily valid immutable instances in the main thread.
+in a web worker, with the following features:
+* simple API based on keys.
+* hermetic container for cryptographic material.
+sensitive key content remains contained and never leaves the worker thread.
+* key instances are immutable and ephemeral.
+
+In addition to its simple API,
+the proxy ensures that key material is well contained
+and does not leak throughout client code.
+Key ephemerality and immutability further enhance the robustness of the API.
 
 # <a name="api"></a> API v0.0.1 experimental
 Typescript compatible.
@@ -36,7 +42,7 @@ expose the main cryptographic methods to process `string` text:
 ### errors
 flow | type | message | data | reason
 -----|------|---------|------|-------
-sync |`Error`|'initialization failure'|N/A|fail to initialize [openpgp](https://openpgpjs.org/) worker
+sync |`Error`|initialization failure|N/A|fail to initialize [openpgp](https://openpgpjs.org/) worker
 
 ### example
 ```javascript
@@ -57,7 +63,7 @@ static fromArmor (armor: string): Promise<OpgpKeyring>
 ### errors
 flow | type | message | data | reason
 -----|------|---------|------|-------
-async|`Error`|'invalid armor'|N/A|fail to parse armor string
+async|`Error`|invalid armor|N/A|fail to parse armor string
 
 ### example
 ```javascript
