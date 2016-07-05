@@ -60,7 +60,7 @@
     "proxyquire-universal": "^1.0.8",
     "proxyquireify": "^3.2.0",
     "remap-istanbul": "^0.6.4",
-    "rimraf": "^2.5.2",
+    "rimraf": "^2.5.3",
     "tsify": "^0.16.0",
     "typescript": "^1.8.10",
     "typings": "^1.2.0",
