@@ -22,9 +22,9 @@ import {
   BehaviorSubject,
   Observer
 } from '@reactivex/rxjs'
-import { getOpgpKey, OpgpKey, CoreOpgpKey } from './opgpkey'
+import { getOpgpKey, OpgpKey } from './opgpkey'
 
-export { OpgpKey, CoreOpgpKey }
+export { OpgpKey }
 
 /**
  * @public
@@ -40,10 +40,10 @@ export interface OpgpKeyringFactory {
 /**
  * immutable proxy for an {openpgp} instance
  * running in a web worker thread.
- * a map of primary-key id {string} to {OpgpKey} instance.
+ * a map of primary-key hash {string} to {OpgpKey} instance.
  * @extends {Map<string,OpgpKey>}
  */
-export interface OpgpKeyring extends Map<string,CoreOpgpKey> {
+export interface OpgpKeyring extends Map<string,OpgpKey> {
   /**
    * @public
    * Encrypt-then-MAC authenticated encryption
@@ -88,7 +88,7 @@ export interface OpgpKeyring extends Map<string,CoreOpgpKey> {
  * immutable proxy for an {openpgp} instance
  * running in a web worker thread
  */
-class OpgpKeyringClass extends Map<string,CoreOpgpKey> implements OpgpKeyring {
+class OpgpKeyringClass extends Map<string,OpgpKey> implements OpgpKeyring {
   /**
    * @public
    * @see {OpgpKeyringFactory}

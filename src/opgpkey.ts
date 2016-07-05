@@ -27,11 +27,10 @@ import {
  * @public
  * @factory
  * @param  {OpgpKeySpec} spec
- * @generic P extends {Publishable} a public key
- * @return {P|Lockable<P>} a private or public key
+ * @return {Promise<OpgpKey>} a private or public key
  */
 export interface OpgpKeyFactory {
-  <P extends Publishable>(spec: OpgpKeySpec): Promise<P|Concealable<P>>
+  (spec: OpgpKeySpec): Promise<OpgpKey>
 }
 
 /**
@@ -45,6 +44,8 @@ export interface OpgpKeySpec {
    */
   armor: string
 }
+
+export type OpgpKey = Publishable | Concealable<Publishable>
 
 /**
  * type of public key instances
@@ -231,9 +232,9 @@ class ExposableKey implements Exposable {
    * @see OpgpKeyFactory
    */
   static getInstance <P extends Publishable>(spec: OpgpKeySpec):
-  Promise<P|Concealable<P>> {
-    // TODO post spec.armor to worker, receive corresponding {OpgpkeyDescriptor},
-    // then create new Opgpkey with received {OpgpkeyDescriptor},
+  Promise<OpgpKey> {
+    // TODO post spec.armor to worker, receive corresponding {OpgpKeyDescriptor},
+    // then create new OpgpKey with received {OpgpKeyDescriptor},
     // after deep-freeze.
     return
   }
@@ -274,7 +275,7 @@ class ExposableKey implements Exposable {
    * @public
    * @immutable
    * @enumerable true
-   * SHA256 of the armored representation of this {Opgpkey}.
+   * SHA256 of the armored representation of this {OpgpKey}.
    */
   hash: string
 
@@ -298,7 +299,7 @@ class ExposableKey implements Exposable {
    * @public
    * @immutable
    * @enumerable true
-   * ordered list of {OpgpUserId}s of the user of this {Opgpkey},
+   * ordered list of {OpgpUserId}s of the user of this {OpgpKey},
    * starting with the user's primary id
    */
 //  userids: string[]
@@ -307,7 +308,7 @@ class ExposableKey implements Exposable {
    * @public
    * @immutable
    * @enumerable false
-   * armored representation of this {Opgpkey}.
+   * armored representation of this {OpgpKey}.
    */
   armor: string
 
@@ -322,7 +323,7 @@ class ExposableKey implements Exposable {
 
   /**
    * @private
-   * @param  {OpgpkeyDescriptor} spec
+   * @param  {OpgpKeyDescriptor} spec
    * private properties are not enumerable so that they don't show up in JSON.
    * object properties of spec should be immutable.
    * @see PgpKey.fromArmor
@@ -346,7 +347,7 @@ class ExposableKey implements Exposable {
    * @protected
    * @immutable
    * @enumerable false
-   * temporary secret handle for this {Opgpkey}.
+   * temporary secret handle for this {OpgpKey}.
    */
   protected _handle : string
 
@@ -532,7 +533,7 @@ mixin(PrivateUniversalKey, [ PrivateAuthenticatingKey, PrivateCodingKey ])
 interface PublishableKeySpec extends Identifiable {
   /**
    * @private
-   * temporary secret handle for this {Opgpkey}.
+   * temporary secret handle for this {OpgpKey}.
    */
   handle: string
   /**
@@ -554,7 +555,7 @@ interface PublishableKeySpec extends Identifiable {
   isAuthKey : boolean
   /**
    * @public
-   * ordered list of the user ids of this {Opgpkey},
+   * ordered list of the user ids of this {OpgpKey},
    * starting with the user's primary id.
    */
   userids?: string[]
