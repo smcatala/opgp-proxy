@@ -22,32 +22,92 @@ import {
   BehaviorSubject,
   Observer
 } from '@reactivex/rxjs'
+import { Map as FMap } from 'immutable'
 const workify = require('webworkify') // no typings
 import {
   fromArmor,
-  OpgpKeyringFactory,
+  fromMap,
   OpgpKeyring,
   OpgpKey
 } from './opgpkeyring'
 
-export {
-  fromArmor,
-  OpgpKeyringFactory,
-  OpgpKeyring,
-  OpgpKey
+export interface OpgpProxyFactory {
+  (config: OpgpProxyConfig): Promise<OpgpProxy>
+}
+
+export interface OpgpProxyConfig {
+  // TODO
 }
 
 /**
- * @immutable
- * {Worker} running an openpgp instance
+ * @public
+ * immutable instance that proxies a worker instance
+ * of [openpgp](https://openpgpjs.org/)
+ * through a simplified API based on immutable ephemeral {OpgpKey} instances.
  */
-const _openpgp: Worker = spawnWorker('worker.js')
+export interface OpgpProxy {
+  /**
+   * @public
+   * @factory
+   * @param {string} armor [openpgp](https://openpgpjs.org/) armored key string
+   * @param  {OpgpKeyringOpts} opts?
+   * @returns {Promise<OpgpKeyring>}
+   * @error {OpgpError}
+   */
+  getKeysFromArmor (armor: string, opts?: OpgpKeyringOpts): Promise<OpgpKeyring>
+  /** TODO expand to accept Iterable<string,OpgpKey>
+   * @public
+   * @factory
+   * @param  {Map<string,OpgpKey>|Immutable.Map<string,OpgpKey>} map
+   * standard ES6 Map or
+   * [Immutable](https://facebook.github.io/immutable-js/).Map
+   * of `OpgpKey.hash` string to OpgpKey
+   * @returns {OpgpKeyring}
+   */
+  getKeysFromMap (map: Map<string,OpgpKey>|FMap<string,OpgpKey>, opts?: OpgpKeyringOpts):
+  OpgpKeyring
+}
+
+export interface OpgpKeyringOpts {
+  // TODO
+}
+
+class OpgpProxyClass implements OpgpProxy {
+  static getInstance (config: OpgpProxyConfig): Promise<OpgpProxy> {
+    return // TODO
+  }
+
+  /**
+   * @public
+   * @see {OpgpProxy#getKeysFromArmor}
+   */
+  getKeysFromArmor (armor: string, opts?: OpgpKeyringOpts): Promise<OpgpKeyring> {
+    return
+  }
+
+  /**
+   * @public
+   * @see {OpgpProxy#getKeysFromMap}
+   */
+  getKeysFromMap (map: Map<string,OpgpKey>|FMap<string,OpgpKey>,
+  opts?: OpgpKeyringOpts): OpgpKeyring {
+    return
+  }
+
+  /**
+   * @private
+   */
+  constructor (spec: OpgpProxySpec) {
+    // TODO
+  }
+
+}
 
 /**
  * @private
- * @param  {string} url
- * @returns {Worker}
  */
-function spawnWorker (url: string): Worker {
-  return // TODO use webworkify
+interface OpgpProxySpec {
+  // TODO
 }
+
+export const getOpgpProxy: OpgpProxyFactory = OpgpProxyClass.getInstance

@@ -22,6 +22,7 @@ import {
   BehaviorSubject,
   Observer
 } from '@reactivex/rxjs'
+import { Map as FMap } from 'immutable'
 import { fixSubclass } from './lib/utils'
 import { getOpgpKey, OpgpKey } from './opgpkey'
 
@@ -30,21 +31,43 @@ export { OpgpKey }
 /**
  * @public
  * @factory
- * @param {string} armor
+ * @param {string} armor [openpgp](https://openpgpjs.org/) armored key string
+ * @param {OpgpKeyringOpts} opts?
  * @return {Promise<OpgpKeyring>}
  * @error {OpgpError}
  */
-export interface OpgpKeyringFactory {
-  (armor: string, opts?: Object): Promise<OpgpKeyring>
+export interface OpgpKeyringFromArmor {
+  (armor: string, opts?: OpgpKeyringOpts): Promise<OpgpKeyring>
+}
+
+/** TODO expand to accept Iterable<string,OpgpKey>
+ * @public
+ * @factory
+ * @param  {Map<string,OpgpKey>|Immutable.Map<string,OpgpKey>} map
+ * standard ES6 Map or
+ * [Immutable](https://facebook.github.io/immutable-js/).Map
+ * of `OpgpKey.hash` string to OpgpKey
+ * @returns {OpgpKeyring}
+ */
+export interface OpgpKeyringFromMap {
+  (map: Map<string,OpgpKey>|FMap<string,OpgpKey>, opts?: OpgpKeyringOpts):
+  OpgpKeyring
+}
+
+export interface OpgpKeyringOpts {
+  // TODO
 }
 
 /**
+ * @public
  * immutable proxy for an {openpgp} instance
  * running in a web worker thread.
- * a map of primary-key hash {string} to {OpgpKey} instance.
- * @extends {Map<string,OpgpKey>}
+ * the keys are accessible
+ * as an [Immutable](https://facebook.github.io/immutable-js/).Map
+ * of primary-key hash {string} to {OpgpKey} instance.
+ * @see {OpgpKeyring#keys}
  */
-export interface OpgpKeyring extends Map<string,OpgpKey> {
+export interface OpgpKeyring {
   /**
    * @public
    * Encrypt-then-MAC authenticated encryption
@@ -82,6 +105,13 @@ export interface OpgpKeyring extends Map<string,OpgpKey> {
    *  the list of
    */
   verify (src: string): Promise<string>
+  /**
+   * @public
+   * [Immutable](https://facebook.github.io/immutable-js/).Map
+   * of primary-key hash {string} to {OpgpKey} instance
+   * of the keys in this {OpgpKeyring}.
+   */
+  keys: FMap<string, OpgpKey>
 }
 
 /**
@@ -89,12 +119,24 @@ export interface OpgpKeyring extends Map<string,OpgpKey> {
  * immutable proxy for an {openpgp} instance
  * running in a web worker thread
  */
-class OpgpKeyringClass extends Map<string,OpgpKey> implements OpgpKeyring {
+class OpgpKeyringClass
+implements OpgpKeyring {
   /**
    * @public
-   * @see {OpgpKeyringFactory}
+   * @static
+   * @see {OpgpKeyringFromArmor}
    */
-  static fromArmor (armor: string): Promise<OpgpKeyring> {
+  static fromArmor (armor: string, opts?: OpgpKeyringOpts): Promise<OpgpKeyring> {
+    return
+  }
+
+  /**
+   * @public
+   * @static
+   * @see {OpgpKeyringFromMap}
+   */
+  static fromMap (map: Map<string,OpgpKey>|FMap<string,OpgpKey>,
+  opts?: OpgpKeyringOpts): OpgpKeyring {
     return
   }
 
@@ -131,12 +173,21 @@ class OpgpKeyringClass extends Map<string,OpgpKey> implements OpgpKeyring {
   }
 
   /**
+   * @public
+   * @see {OpgpKeyring#keys}
+   */
+  keys: FMap<string, OpgpKey>
+
+  /**
    * @private
    * @param  {PgpKeySpec} spec
    * @see {OpgpKeyringFactory}
    */
   constructor (spec: OpgpKeyringSpec) {
-    super()
+    // TODO
+    Object.defineProperties(this, {
+      keys: { value: FMap(spec.keys), enumerable: true }
+    })
   }
 
   private _armor: string
@@ -150,6 +201,8 @@ fixSubclass(OpgpKeyringClass)
  */
 interface OpgpKeyringSpec {
   // TODO
+  keys: Map<string,OpgpKey> | FMap<string,OpgpKey>
 }
 
-export const fromArmor: OpgpKeyringFactory = OpgpKeyringClass.fromArmor
+export const fromArmor: OpgpKeyringFromArmor = OpgpKeyringClass.fromArmor
+export const fromMap: OpgpKeyringFromMap = OpgpKeyringClass.fromMap
