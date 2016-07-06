@@ -106,9 +106,9 @@ then the encoded text is additionally authenticated
 with these keys. Typically, only one signing key is necessary.
 
 It is possible to optionally restrict encoding and/or signing
-to a subset of the encoding and/or signing keys respectively
-by providing corresponding lists of OpgpKey.hash reference strings
-in `opts.keys`.
+to a subset of the encoding and/or signing [`OpgpKey`](#api.opgpkey) instances
+respectively by providing corresponding lists
+of `OpgpKey.hash` reference strings in `opts.keys`.
 
 At least one public encoding key and one private signing key must be included.
 If `strict` mode is disabled, it is possible to encrypt without authenticating,
@@ -147,7 +147,7 @@ interface EncodeOpts {
    * Otherwise limit authentication to the included public signing keys, if any.
    * default: true
    */
-  strict?: boolean}
+  strict?: boolean
 ```
 
 ### errors
@@ -155,7 +155,8 @@ flow | type | message | data | reason
 -----|------|---------|------|-------
 async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
 async|`Error`|invalid reference|N/A|one or more `OpgpKey.hash` reference strings in `opts.keys.encode` or `opts.keys.sign` do not match any key in this `OpgpKeyring`
-async|`Error`|key not found|N/A|this OpgpKeyring does not contain any public encoding OpgpKey instances, or any private signing OpgpKey instances (`opts.strict` is true)
+async|`Error`|encode error|N/A|this OpgpKeyring does not contain any public encoding OpgpKey instances
+async|`Error`|sign error|N/A|`opts.strict` is true and this OpgpKeyring does not contain any private signing OpgpKey instances
 async|`OpgpError`|invalid key: ${data}|`Array<string>` `OpgpKey.hash` strings of invalid `OpgpKey` instances|one or more `OpgpKey` instances in this `OpgpKeyring` are either locked, stale or unknown
 
 ##  <a name="api.opgpkeyring.decode"></a> method `OpgpKeyring#decode`
@@ -163,17 +164,22 @@ async|`OpgpError`|invalid key: ${data}|`Array<string>` `OpgpKey.hash` strings of
 For EtM-AE strings, first verify the authenticity of the `src` string
 with all required public verification [`OpgpKey`](#api.opgpkey) instances.
 Fail if any required public verification [`OpgpKey`](#api.opgpkey) instances
-are missing from this [`OpgpKeyring`](#api.opgpkey) or excluded.
+are missing from this [`OpgpKeyring`](#api.opgpkey)
+or excluded from the list of `OpgpKey.hash` reference strings
+in `opts.keys.verify`.
+
 If `strict` mode is disabled, it is possible to limit verification
 to all public verification [`OpgpKey`](#api.opgpkey) instances bundled
 in this [`OpgpKeyring`](#api.opgpkey) instance if any,
-or to a subset defined by a list of `OpgpKey.hash` strings.
+or to a subset defined by a list of `OpgpKey.hash` reference strings
+in `opts.keys.verify`.
 
 If and only if authenticity is successfully verified,
 decode the given `src` string with the private encryption
 [`OpgpKey`](#api.opgpkey) instance
 in this [`OpgpKeyring`](#api.opgpkey) instance,
-or with that referenced by a given `OpgpKey.hash` string.
+or with that referenced by a `OpgpKey.hash` reference string
+defined in `opts.keys.verify`.
 
 For MtE-AE strings, first decode,
 then verify authenticity of the decoded string.
@@ -212,40 +218,96 @@ interface DecodeOpts {
 flow | type | message | data | reason
 -----|------|---------|------|-------
 async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
-async|`Error`|invalid reference|N/A|one or more `OpgpKey.hash` reference strings in `opts.keys.encode` or `opts.keys.sign` do not match any key in this `OpgpKeyring`
-async|`Error`|invalid cipher|N/A|fail to decode input
+async|`Error`|invalid reference|N/A|one or more `OpgpKey.hash` reference strings in `opts.keys.decode` or `opts.keys.verify` do not match any key in this `OpgpKeyring`
+async|`Error`|unknkown cipher|N/A|cipher not supported, or no cipher, or unknown cipher format
 async|`OpgpError`|invalid key: ${data}|`Array<string>` `OpgpKey.hash` strings of invalid `OpgpKey` instances|one or more `OpgpKey` instances in this `OpgpKeyring` are either locked, stale or unknown
-async|`OpgpError`|key not found: ${data}|`Array<string>` openpgp id strings of all required private decryption keys if none were found in this OpgpKeyring or included in `opts.keys.decode`
-async|`OpgpError`|authentication error: ${data}|`Array<string>` `OpgpKey.hash` strings of `OpgpKey` instances for which authentication fails|one or more `OpgpKey` instances in this `OpgpKeyring` fails authentication
+async|`OpgpError`|decode error: ${data}|`Array<string>` openpgp id strings of all required private decryption keys|none of the required private decryption keys were found in this OpgpKeyring or in `opts.keys.decode`
+async|`OpgpError`|verify error: ${data}|`Array<string>` openpgp id strings of all keys for which authentication fails|authenticity verification fails with one or more `OpgpKey` instances in this `OpgpKeyring`, or `opts.strict` is true and one or more required keys were not found
 
 ##  <a name="api.opgpkeyring.sign"></a> method `OpgpKeyring#sign`
 ### description
-Authenticates the `src` text with the private signing
+Authenticate the `src` text with the private signing
 [`OpgpKey`](#api.opgpkey) instances
 bundled in this [`OpgpKeyring`](#api.opgpkey) instance.
+Typically, only one signing key is necessary.
+
+It is possible to optionally restrict signing
+to a subset of the private signing [`OpgpKey`](#api.opgpkey) instances
+by providing a corresponding list of `OpgpKey.hash` reference strings
+in `opts.keys.sign`.
+
+At least one public encoding key and one private signing key must be included.
 
 ### syntax
 ```javascript
-sign (src: string): Promise<string>
+sign (src: string, opts?: SignOpts): Promise<string>
+
+interface SignOpts {
+  keys?: {
+    /**
+     * list of OpgpKey.hash reference strings
+     * of private signing OpgpKey instances in this OpgpKeyring
+     * to use for signing.
+     * default: all private signing OpgpKey instances in this OpgpKeyring.
+     */
+    sign?: string[]
+  }
 ```
+
+### errors
+flow | type | message | data | reason
+-----|------|---------|------|-------
+async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
+async|`Error`|invalid reference|N/A|one or more `OpgpKey.hash` reference strings in `opts.keys.sign` do not match any key in this `OpgpKeyring`
+async|`Error`|sign error|N/A|this OpgpKeyring does not contain any private signing OpgpKey instances
+async|`OpgpError`|invalid key: ${data}|`Array<string>` `OpgpKey.hash` strings of invalid `OpgpKey` instances|one or more `OpgpKey` instances in this `OpgpKeyring` are either locked, stale or unknown
 
 ##  <a name="api.opgpkeyring.verify"></a> method `OpgpKeyring#verify`
 ### description
-Verifies the authenticity of the `src` text with the public signing
-[`OpgpKey`](#api.opgpkey) instances
-bundled in this [`OpgpKeyring`](#api.opgpkey) instance.
+Verify the authenticity of the `src` string
+with all required public verification [`OpgpKey`](#api.opgpkey) instances.
+Fail if any required public verification [`OpgpKey`](#api.opgpkey) instances
+are missing from this [`OpgpKeyring`](#api.opgpkey)
+or excluded from `opts.keys.verify`.
+
+If `strict` mode is disabled, it is possible to limit verification
+to all public verification [`OpgpKey`](#api.opgpkey) instances bundled
+in this [`OpgpKeyring`](#api.opgpkey) instance if any,
+or to a subset defined by a list of `OpgpKey.hash` strings.
 
 Returns the `src` string upon successful validation of authenticity.
 
 ### syntax
 ```javascript
-verify (src: string): Promise<string>
+verify (src: string, opts?: DecodeOpts): Promise<string>
+
+interface DecodeOpts {
+  keys?: {
+    /**
+     * list of OpgpKey.hash reference strings
+     * of public verification OpgpKey instances in this OpgpKeyring
+     * to use for verifying authenticity.
+     * default: all public verification OpgpKey instances in this OpgpKeyring
+     */
+    verify?: string[]
+  }
+  /**
+   * require full verification of all signatures when true:
+   * in particular, fail if any keys required for full verification are missing.
+   * Otherwise limit verification to the public verification keys
+   * in this `OpgpKeyring`.
+   * default: true
+   */
+  strict?: boolean
 ```
 
 ### errors
 flow | type | message | data
 -----|------|---------|---------
-async|`OpgpError`|authentication failure: ${data}|`Array<string>` OpgpKey.hash strings of OpgpKey instances for which authenticity verification failed.
+async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
+async|`Error`|invalid reference|N/A|one or more `OpgpKey.hash` reference strings in `opts.keys.decode` or `opts.keys.verify` do not match any key in this `OpgpKeyring`
+async|`OpgpError`|invalid key: ${data}|`Array<string>` `OpgpKey.hash` strings of invalid `OpgpKey` instances|one or more `OpgpKey` instances in this `OpgpKeyring` are either locked, stale or unknown
+async|`OpgpError`|verify error: ${data}|`Array<string>` openpgp id strings of all keys for which authentication fails|authenticity verification fails with one or more `OpgpKey` instances in this `OpgpKeyring`, or `opts.strict` is true and one or more required keys were not found
 
 # <a name="license"></a> LICENSE
 Copyright 2016 Stéphane M. Catala
