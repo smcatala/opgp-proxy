@@ -212,7 +212,8 @@ interface DecodeOpts {
    * default: true
    */
   strict?: boolean
-}```
+}
+```
 
 ### errors
 flow | type | message | data | reason
@@ -252,6 +253,7 @@ interface SignOpts {
      */
     sign?: string[]
   }
+}
 ```
 
 ### errors
