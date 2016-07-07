@@ -77,7 +77,7 @@ export interface OpgpKeyring {
    * then signed with the private keys in this {OpgpKeyring} if any.
    * [The Order of Encryption and Authentication for Protecting Communications (Or: How Secure is SSL?), Hugo Krawczyk](http://www.iacr.org/archive/crypto2001/21390309.pdf)
    */
-  encode (src: string): Promise<string>
+  encode (src: string, opts?: EncodeOpts): Promise<string>
   /**
    * @public
    * @param  {string} src
@@ -87,14 +87,14 @@ export interface OpgpKeyring {
    * only if proven authentic.
    * [The Order of Encryption and Authentication for Protecting Communications (Or: How Secure is SSL?), Hugo Krawczyk](http://www.iacr.org/archive/crypto2001/21390309.pdf)
    */
-  decode (src: string): Promise<string>
+  decode (src: string, opts?: DecodeOpts): Promise<string>
   /**
    * @public
    * @param  {string} src
    * @returns {Promise<string>} authenticated src,
    * signed with the private signing keys in this {OpgpKeyring} if any.
    */
-  sign (src: string): Promise<string>
+  sign (src: string, opts?: SignOpts): Promise<string>
   /**
    * @public
    * @param  {string} src
@@ -104,7 +104,7 @@ export interface OpgpKeyring {
    * @error {AuthError} 'verification failure'
    *  the list of
    */
-  verify (src: string): Promise<string>
+  verify (src: string, opts?: VerifyOpts): Promise<string>
   /**
    * @public
    * [Immutable](https://facebook.github.io/immutable-js/).Map
@@ -112,6 +112,96 @@ export interface OpgpKeyring {
    * of the keys in this {OpgpKeyring}.
    */
   keys: FMap<string, OpgpKey>
+}
+
+export interface EncodeOpts {
+  keys?: {
+    /**
+     * list of OpgpKey.hash reference strings
+     * of public encoding OpgpKey instances in this OpgpKeyring
+     * to use for encoding.
+     * default: all public encoding OpgpKey instances in this OpgpKeyring.
+     */
+    encode?: string[]
+    /**
+     * list of OpgpKey.hash reference strings
+     * of private signing OpgpKey instances in this OpgpKeyring
+     * to use for signing.
+     * default: all private signing OpgpKey instances in this OpgpKeyring.
+     */
+    sign?: string[]
+  }
+  /**
+   * Encrypt-then-MAC when true.
+   * Otherwise force openpgp Mac-then-Encrypt.
+   * default: true
+   */
+  etm?: boolean
+  /**
+   * require authentication when true:
+   * in particular, fail if no private signing keys are included.
+   * Otherwise limit authentication to the included public signing keys, if any.
+   * default: true
+   */
+  strict?: boolean
+}
+
+export interface DecodeOpts {
+  keys?: {
+    /**
+     * OpgpKey.hash reference string of the private decoding OpgpKey instance
+     * in this OpgpKeyring to use for decoding.
+     * default: the single private decoding OpgpKey instance in this OpgpKeyring
+     */
+    decode?: string
+    /**
+     * list of OpgpKey.hash reference strings
+     * of public verification OpgpKey instances in this OpgpKeyring
+     * to use for verifying authenticity.
+     * default: all public verification OpgpKey instances in this OpgpKeyring
+     */
+    verify?: string[]
+  }
+  /**
+   * require full verification of all signatures when true:
+   * in particular, fail if any keys required for full verification are missing.
+   * Otherwise limit verification to the public verification keys
+   * in this `OpgpKeyring`.
+   * default: true
+   */
+  strict?: boolean
+}
+
+export interface SignOpts {
+  keys?: {
+    /**
+     * list of OpgpKey.hash reference strings
+     * of private signing OpgpKey instances in this OpgpKeyring
+     * to use for signing.
+     * default: all private signing OpgpKey instances in this OpgpKeyring.
+     */
+    sign?: string[]
+  }
+}
+
+export interface VerifyOpts {
+  keys?: {
+    /**
+     * list of OpgpKey.hash reference strings
+     * of public verification OpgpKey instances in this OpgpKeyring
+     * to use for verifying authenticity.
+     * default: all public verification OpgpKey instances in this OpgpKeyring
+     */
+    verify?: string[]
+  }
+  /**
+   * require full verification of all signatures when true:
+   * in particular, fail if any keys required for full verification are missing.
+   * Otherwise limit verification to the public verification keys
+   * in this `OpgpKeyring`.
+   * default: true
+   */
+  strict?: boolean
 }
 
 /**
@@ -193,15 +283,14 @@ implements OpgpKeyring {
   private _armor: string
 }
 
-fixSubclass(OpgpKeyringClass)
-
 /**
  * @private
  *
  */
 interface OpgpKeyringSpec {
   // TODO
-  keys: Map<string,OpgpKey> | FMap<string,OpgpKey>
+  armor: string
+  keys?: Map<string,OpgpKey> | FMap<string,OpgpKey>
 }
 
 export const fromArmor: OpgpKeyringFromArmor = OpgpKeyringClass.fromArmor

@@ -331,6 +331,7 @@ class ExposableKey implements Exposable {
    * @see PgpKey#clone
    */
   constructor (spec: PublishableKeySpec) {
+    // TODO
     Object.defineProperties(this, {
       id: { value: spec.id, enumerable: true },
       fingerprint: { value: spec.fingerprint, enumerable: true },

@@ -32,7 +32,7 @@ import {
 } from './opgpkeyring'
 
 export interface OpgpProxyFactory {
-  (config: OpgpProxyConfig): Promise<OpgpProxy>
+  (config?: OpgpProxyConfig): Promise<OpgpProxy>
 }
 
 export interface OpgpProxyConfig {
@@ -55,7 +55,7 @@ export interface OpgpProxy {
    * @error {OpgpError}
    */
   getKeysFromArmor (armor: string, opts?: OpgpKeyringOpts): Promise<OpgpKeyring>
-  /** TODO expand to accept Iterable<string,OpgpKey>
+  /**
    * @public
    * @factory
    * @param  {Map<string,OpgpKey>|Immutable.Map<string,OpgpKey>} map
@@ -64,8 +64,13 @@ export interface OpgpProxy {
    * of `OpgpKey.hash` string to OpgpKey
    * @returns {OpgpKeyring}
    */
-  getKeysFromMap (map: Map<string,OpgpKey>|FMap<string,OpgpKey>, opts?: OpgpKeyringOpts):
-  OpgpKeyring
+  getKeysFromMap (map: Map<string,OpgpKey>|FMap<string,OpgpKey>,
+  opts?: OpgpKeyringOpts): OpgpKeyring
+  /**
+   * @public
+   * terminate the [openpgp](https://openpgpjs.org/)
+   */
+  terminate (): void
 }
 
 export interface OpgpKeyringOpts {
@@ -95,6 +100,14 @@ class OpgpProxyClass implements OpgpProxy {
   }
 
   /**
+   * @public
+   * @see {OpgpProxy#terminate}
+   */
+  terminate (): void {
+    // TODO
+  }
+
+  /**
    * @private
    */
   constructor (spec: OpgpProxySpec) {
@@ -110,4 +123,5 @@ interface OpgpProxySpec {
   // TODO
 }
 
-export const getOpgpProxy: OpgpProxyFactory = OpgpProxyClass.getInstance
+const getOpgpProxy: OpgpProxyFactory = OpgpProxyClass.getInstance
+export default getOpgpProxy
