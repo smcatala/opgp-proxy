@@ -4,12 +4,12 @@
 
 abstracting proxy for an [openpgp](https://openpgpjs.org/) instance, isolated
 in a web worker, with the following features:
-* simple API based on keys.
+* robust, minimalistic yet flexible API based on keys.
+* key instances are immutable and ephemeral.
 * hermetic container for cryptographic material.
 sensitive key content remains contained and never leaves the worker thread.
-* key instances are immutable and ephemeral.
 
-In addition to its simple API,
+In addition to its minimalistic yet flexible API,
 the proxy ensures that key material is well contained
 and does not leak throughout client code.
 Key ephemerality and immutability further enhance the robustness of the API.
@@ -433,6 +433,187 @@ async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wr
 async|`Error`|invalid reference|N/A|one or more `OpgpKey.hash` reference strings in `opts.keys.decode` or `opts.keys.verify` do not match any key in this `OpgpKeyring`
 async|`OpgpError`|invalid key: ${data}|`Array<string>` `OpgpKey.hash` strings of invalid `OpgpKey` instances|one or more `OpgpKey` instances in this `OpgpKeyring` are either locked, stale or unknown
 async|`OpgpError`|verify error: ${data}|`Array<string>` openpgp id strings of all keys for which authentication fails|authenticity verification fails with one or more `OpgpKey` instances in this `OpgpKeyring`, or `opts.strict` is true and one or more required keys were not found
+
+##  <a name="api.opgp-key"></a> type alias `OpgpKey`
+### description
+The `OpgpKey` type alias represents immutable and ephemeral instances
+that abstract key material from the [openpgp](https://openpgpjs.org/) worker.
+* the sensitive cryptographic key material remains well contained
+in the [openpgp](https://openpgpjs.org/) worker,
+and is not included in the internals of, or exposed by `OpgpKey` instances.
+* `OpgpKey` instances are immutable
+* `OpgpKey` instances are ephemeral:
+they become stale if none of their methods are called
+for a defined length of time,
+or if the [openpgp](https://openpgpjs.org/) worker is terminated.
+
+A stale `OpgpKey` is permanently detached from the key material
+it represented in the [openpgp](https://openpgpjs.org/) worker,
+allowing for the corresponding worker-side key instance
+to eventually be garbage collected.
+A new `OpgpKey` instance may readily be created from a stale instance,
+e.g. from the latter's `OpgpKey.armor` string,
+however, in case of private keys,
+the new instance will always be locked by default,
+regardless of whether the stale instance had been unlocked or not.
+
+The `OpgpKey` type alias is a union of the following:
+* [`Publishable`](#api.opgp-key.publishable) type alias
+that represents public keys
+* [`Concealable<Publishable>`](#api.opgp-key.concealable) interface
+that represents private keys
+
+In other words, the `OpgpKey` type alias represents either
+a public, or a private key.
+
+### syntax
+```typescript
+type OpgpKey = Publishable | Concealable<Publishable>
+```
+
+##  <a name="api.opgp-key.publishable"></a> type alias `Publishable`
+### description
+The `Publishable` type alias represents public key instances.
+
+More specifically, these are [`Exposable`](#api.opgp-key.exposable) instances
+that are either [`Encodable`](#api.opgp-key.encodable),
+or [`Verifiable`](#api.opgp-key.verifiable),
+or both.
+
+In other words, `Publishable` instances expose properties about the key
+through the [`Exposable`](#api.opgp-key.exposable) interface,
+as well as [`Encodable#encode`](#api.opgp-key.encodable.encode)
+and/or [`Verifiable#verify`](#api.opgp-key.verifiable.verify) methods
+through the [`Encodable`](#api.opgp-key.encodable)
+and [`Verifiable`](#api.opgp-key.verifiable) interfaces respectively.
+
+### syntax
+```typescript
+type Publishable =
+Exposable & (Encodable | Verifiable | (Encodable & Verifiable))
+```
+
+##  <a name="api.opgp-key.concealable"></a> interface `Concealable<P extends Publishable>`
+### description
+The `Concealable` interface represents private key instances.
+
+More specifically, these are [`Exposable`](#api.opgp-key.exposable) instances
+that are additionally [`Lockable`](#api.opgp-key.lockable).
+
+In other words, `Concealable` instances expose properties about the key
+through the [`Exposable`](#api.opgp-key.exposable) interface,
+as well as [`Lockable#lock`](#api.opgp-key.lockable.lock)
+and [`Lockable#unlock`](#api.opgp-key.lockable.unlock) methods
+through the [`Lockable`](#api.opgp-key.lockable) interface.
+
+Additionally, `Concealable` instances also expose
+a `Concealable#publicKey` property holding
+their [`Publishable`](#api.opgp-key.publishable) public key component.
+The type of that [`Publishable`](#api.opgp-key.publishable)
+defines that of the `Concealable`,
+and is hence the generic type parameter of the `Concealable`.
+
+The more specialised [`RootConcealable`](#api.opgp-key.root-concealable)
+interface, that extends the `Concealable` interface, represents primary keys,
+which additionally expose subkeys and owner information.
+
+### syntax
+```typescript
+interface Concealable<P extends Publishable> extends Exposable, Lockable {
+	publicKey: P
+}
+```
+
+##  <a name="api.opgp-key.root-concealable"></a> interface `RootConcealable<P extends Publishable>`
+### description
+The `RootConcealable` interface represents intances of primary keys.
+
+More specifically, these are [`Concealable`](#api.opgp-key.concealable)
+instances that additionally expose
+an [`Immutable.List`](https://facebook.github.io/immutable-js/)
+of [`Concealable`](#api.opgp-key.concealable) subkey instances
+and an [`Immutable.List`](https://facebook.github.io/immutable-js/)
+of user id strings.
+
+### syntax
+```typescript
+export interface RootConcealable<P extends Publishable> extends Concealable<P> {
+  keys: Immutable.List<Concealable<Publishable>>
+  userids: Immutable.List<string>
+}
+```
+
+##  <a name="api.opgp-key.lockable"></a> interface `Lockable`
+### description
+Instances of the `Lockable` interface may be locked and unlocked
+with a secret passphrase.
+[`Concealable`](#api.opgp-key.concealable) instances are specialized
+`Lockable` instances.
+
+This interface exposes [`Lockable#lock`](#api.opgp-key.lockable.lock)
+and [`Lockable#unlock`](#api.opgp-key.lockable.unlock) methods.
+
+More specifically, locking a `Lockable` instance is simply encrypting it
+with a secret passphrase, while unlocking a locked `Lockable` instance
+is decrypting it with the passphrase that was used to lock it.
+
+This functionality is provided by
+[openpgp](https://openpgpjs.org/openpgpjs/doc/module-openpgp.html)
+in the [openpgp](https://openpgpjs.org) worker.
+
+Since they mutate the state of the underlying [openpgp](https://openpgpjs.org)
+key in a security-critical way,
+the [`Lockable#lock`](#api.opgp-key.lockable.lock)
+and [`Lockable#unlock`](#api.opgp-key.lockable.unlock) methods
+return a new immutable [`Concealable`](#api.opgp-key.concealable) instance.
+
+Furthermore, the [`Lockable#lock`](#api.opgp-key.lockable.lock) method
+immediately invalidates its `Lockable` instance,
+which then becomes permanently stale.
+
+Finally, the immutable state of a `Lockable` instance is exposed
+by its `isLocked` property.
+
+### syntax
+```typescript
+interface Lockable {
+	lock (): Promise<this>
+	unlock (): Promise<this>
+  isLocked: boolean
+}
+```
+
+##  <a name="api.opgp-key.exposable"></a> interface `Exposable`
+### description
+Instances of the `Exposable` interface expose public information about these.
+All [`OpgpKey`](#api.opgp-key) instances are `Exposable`.
+
+### syntax
+```typescript
+interface Exposable extends Identifiable {
+  toString (): string
+  isPrivateKey <P extends Exposable>(): this is Concealable<P>
+  isCodingKey (): this is Encodable | Decodable
+  isAuthKey (): this is Signable | Verifiable
+  hash: string
+  id: string
+  fingerprint: string
+  armor: string
+  expiry: number
+}
+```
+
+##  <a name="api.opgp-key"></a> interface `OpgpKey`
+### description
+
+### syntax
+```typescript
+
+```
+
+### errors
+flow | type | message | data
+-----|------|---------|---------
 
 # <a name="license"></a> LICENSE
 Copyright 2016 Stéphane M. Catala

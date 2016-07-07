@@ -22,6 +22,7 @@ import {
   BehaviorSubject,
   Observer
 } from '@reactivex/rxjs'
+import { List as FList } from 'immutable'
 import { mixin, fixSubclass } from './lib/utils'
 
 /**
@@ -46,16 +47,88 @@ export interface OpgpKeySpec {
   armor: string
 }
 
+/**
+ * The `OpgpKey` type alias represents immutable and ephemeral instances
+ * that abstract key material from the [openpgp](https://openpgpjs.org/) worker.
+ * * the sensitive cryptographic key material remains well contained
+ * in the [openpgp](https://openpgpjs.org/) worker,
+ * and is not included in the internals of, or exposed by `OpgpKey` instances.
+ * * `OpgpKey` instances are immutable
+ * * `OpgpKey` instances are ephemeral:
+ * they become stale if none of their methods are called
+ * for a defined length of time,
+ * or if the [openpgp](https://openpgpjs.org/) worker is terminated.
+ *
+ * @see {Publishable}
+ * @see {Concealable}
+ */
 export type OpgpKey = Publishable | Concealable<Publishable>
 
 /**
- * type of public key instances
+ * @public
+ * The `RootConcealable` interface represents intances of primary keys.
+ *
+ * More specifically, these are `Concealable`
+ * instances that additionally expose
+ * an [`Immutable.List`](https://facebook.github.io/immutable-js/)
+ * of `Concealable` subkey instances
+ * and an [`Immutable.List`](https://facebook.github.io/immutable-js/)
+ * of user id {strings}.
+ *
+ * @generic P extends {Publishable},
+ * the public component of this {Lockable}
+ *
+ * @see {Concealable}
+ */
+export interface RootConcealable<P extends Publishable> extends Concealable<P> {
+  /**
+   * @public
+   * list of private subkey instances of this {Extendable}
+   */
+  keys: FList<Concealable<Publishable>>
+  /**
+   * @public
+   * ordered list of openpgp user ids,
+   * starting with the primary user id.
+   */
+  userids: FList<string>
+}
+
+/**
+ * The `Publishable` type alias represents public keys.
+ *
+ * More specifically, these are `Exposable` instances
+ * that are either `Encodable`, or `Verifiable`, or both.
+ *
+ * In other words, `Publishable` instances expose properties about the key
+ * through the `Exposable` interface,
+ * as well as `Encodable#encode` and/or `Verifiable#verify` methods
+ * through the `Encodable` and `Verifiable` interfaces respectively.
  */
 export type Publishable =
 Exposable & (Encodable | Verifiable | (Encodable & Verifiable))
 
 /**
- * type of private key instances
+ * The `Concealable` interface represents private key instances.
+ *
+ * More specifically, these are [`Exposable`](#api.opgp-key.exposable) instances
+ * that are additionally [`Lockable`](#api.opgp-key.lockable).
+ *
+ * In other words, `Concealable` instances expose properties about the key
+ * through the [`Exposable`](#api.opgp-key.exposable) interface,
+ * as well as [`Lockable#lock`](#api.opgp-key.lockable.lock)
+ * and [`Lockable#unlock`](#api.opgp-key.lockable.unlock) methods
+ * through the [`Lockable`](#api.opgp-key.lockable) interface.
+ *
+ * Additionally, `Concealable` instances also expose
+ * a `Concealable#publicKey` property holding
+ * their `Publishable` public key component.
+ * The type of that `Publishable` defines that of the `Concealable`,
+ * and is hence the generic type parameter of the `Concealable`.
+ *
+ * The more specialised [`RootConcealable`](#api.opgp-key.root-concealable)
+ * interface, that extends the `Concealable` interface, represents primary keys,
+ * which additionally expose subkeys and owner information. *
  * @generic P extends {Publishable}
  * the type of the public component of private key instances of this type
  */
@@ -70,28 +143,34 @@ extends Exposable, Lockable {
 
 /**
  * @public
- * a primary key, with subkeys and user ids.
- * @generic P extends {Publishable},
- * the public component of this {Lockable}
- */
-export interface Extendable<P extends Publishable> extends Concealable<P> {
-  /**
-   * @public
-   * list of private subkey instances of this {Extendable}
-   */
-  keys: Concealable<Publishable>[]
-  /**
-   * @public
-   * ordered list of openpgp user ids,
-   * starting with the primary user id.
-   */
-  userids: string[]
-}
-
-/**
- * @public
- * {Lockable} instances may be locked (encoded) and unlocked
+ * Instances of the `Lockable` interface may be locked and unlocked
  * with a secret passphrase.
+ * This interface exposes [`Lockable#lock`](#api.opgp-key.lockable.lock)
+ * and [`Lockable#unlock`](#api.opgp-key.lockable.unlock) methods.
+ *
+ * More specifically, locking a `Lockable` instance is simply encrypting it
+ * with a secret passphrase, while unlocking a locked `Lockable` instance
+ * is decrypting it with the passphrase that was used to lock it.
+ *
+ * This functionality is provided by
+ * [openpgp](https://openpgpjs.org/openpgpjs/doc/module-openpgp.html)
+ * in the [openpgp](https://openpgpjs.org) worker.
+ *
+ * Since they mutate the state of the underlying [openpgp](https://openpgpjs.org)
+ * key in a security-critical way,
+ * the [`Lockable#lock`](#api.opgp-key.lockable.lock)
+ * and [`Lockable#unlock`](#api.opgp-key.lockable.unlock) methods
+ * return a new immutable [`Concealable`](#api.opgp-key.concealable) instance.
+ *
+ * Furthermore, the [`Lockable#lock`](#api.opgp-key.lockable.lock) method
+ * immediately invalidates its [`Concealable`](#api.opgp-key.concealable) instance,
+ * which then becomes permanently stale.
+ *
+ * Finally, the current state of a `Lockable` instance is exposed
+ * by its `isLocked` property.
+ *
+ * @see {Lockable#lock}
+ * @see {Lockable#unlock}
  */
 export interface Lockable {
   /**
@@ -174,7 +253,6 @@ export interface Decodable {
  * @public
  * public key interface
  */
-
 export interface Exposable extends Identifiable {
   /**
    * @public
