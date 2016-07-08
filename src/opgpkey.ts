@@ -205,8 +205,13 @@ export interface Verifiable {
    * @param  {string} src
    * @returns {Promise<string>} extracted text, without signature.
    */
-	verify (src: string): Promise<string>
+	verify (src: string, opts?: VerifyOpts): Promise<string>
 }
+
+/**
+ * ignored in current implementation
+ */
+export interface VerifyOpts {}
 
 /**
  * @public
@@ -219,7 +224,19 @@ export interface Encodable {
    * @returns {Promise<string>} encoded `src`,
    * using this {Encodable}
    */
-	encode (src: string): Promise<string>
+	encode (src: string, opts?: EncodeOpts): Promise<string>
+}
+
+/**
+ * optional settings for {Encodable#encode}
+ */
+export interface EncodeOpts {
+  /**
+   * Encrypt-then-MAC when true.
+   * Otherwise force openpgp Mac-then-Encrypt.
+   * default: true
+   */
+  etm?: boolean
 }
 
 /**
@@ -233,8 +250,13 @@ export interface Signable {
    * @returns {Promise<string>} authenticated `src`,
    * signed with this {Signable}.
    */
-	sign (src: string): Promise<string>
+	sign (src: string, opts?: SignOpts): Promise<string>
 }
+
+/**
+ * ignored in current implementation
+ */
+export interface SignOpts {}
 
 /**
  * @public
@@ -247,8 +269,13 @@ export interface Decodable {
    * @returns {Promise<string>} decoded `src`,
    * using this {Decodable}
    */
-	decode (src: string): Promise<string>
+	decode (src: string, opts?: DecodeOpts): Promise<string>
 }
+
+/**
+ * ignored in current implementation
+ */
+export interface DecodeOpts {}
 
 /**
  * @public
