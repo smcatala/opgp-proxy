@@ -62,7 +62,19 @@ export interface OpgpKeySpec {
  * @see {Publishable}
  * @see {Concealable}
  */
-export type OpgpKey = Publishable | Concealable<Publishable>
+export type OpgpKey = SecKey | PubKey
+
+export type RootKey = RootAuthKey | RootCodeKey | RootUniKey
+
+export type SecKey = SecAuthKey | SecCodeKey | SecUniKey
+
+export type PubKey = PubAuthKey | PubCodeKey | PubUniKey
+
+export interface RootAuthKey extends SecAuthKey, Belongings {}
+
+export interface RootCodeKey extends SecCodeKey, Belongings {}
+
+export interface RootUniKey extends SecUniKey, Belongings {}
 
 /**
  * @public
@@ -80,12 +92,12 @@ export type OpgpKey = Publishable | Concealable<Publishable>
  *
  * @see {Concealable}
  */
-export interface RootConcealable<P extends Publishable> extends Concealable<P> {
+export interface Belongings {
   /**
    * @public
    * list of private subkey instances of this {Extendable}
    */
-  keys: FList<Concealable<Publishable>>
+  keys: FList<OpgpKey>
   /**
    * @public
    * ordered list of openpgp user ids,
@@ -94,52 +106,35 @@ export interface RootConcealable<P extends Publishable> extends Concealable<P> {
   userids: FList<string>
 }
 
-/**
- * The `Publishable` type alias represents public keys.
- *
- * More specifically, these are `Exposable` instances
- * that are either `Encodable`, or `Verifiable`, or both.
- *
- * In other words, `Publishable` instances expose properties about the key
- * through the `Exposable` interface,
- * as well as `Encodable#encode` and/or `Verifiable#verify` methods
- * through the `Encodable` and `Verifiable` interfaces respectively.
- */
-export type Publishable =
-Exposable & (Encodable | Verifiable | (Encodable & Verifiable))
-
-/**
- * The `Concealable` interface represents private key instances.
- *
- * More specifically, these are [`Exposable`](#api.opgp-key.exposable) instances
- * that are additionally [`Lockable`](#api.opgp-key.lockable).
- *
- * In other words, `Concealable` instances expose properties about the key
- * through the [`Exposable`](#api.opgp-key.exposable) interface,
- * as well as [`Lockable#lock`](#api.opgp-key.lockable.lock)
- * and [`Lockable#unlock`](#api.opgp-key.lockable.unlock) methods
- * through the [`Lockable`](#api.opgp-key.lockable) interface.
- *
- * Additionally, `Concealable` instances also expose
- * a `Concealable#publicKey` property holding
- * their `Publishable` public key component.
- * The type of that `Publishable` defines that of the `Concealable`,
- * and is hence the generic type parameter of the `Concealable`.
- *
- * The more specialised [`RootConcealable`](#api.opgp-key.root-concealable)
- * interface, that extends the `Concealable` interface, represents primary keys,
- * which additionally expose subkeys and owner information. *
- * @generic P extends {Publishable}
- * the type of the public component of private key instances of this type
- */
-export interface Concealable<P extends Publishable>
-extends Exposable, Lockable {
+export interface SecAuthKey extends Lockable, Signable {
   /**
    * @public
    * public component of this {Lockable}
    */
-	publicKey: P
+	publicKey: PubAuthKey
 }
+
+export interface SecCodeKey extends Lockable, Decodable {
+  /**
+   * @public
+   * public component of this {Lockable}
+   */
+	publicKey: PubCodeKey
+}
+
+export interface SecUniKey extends Lockable, Decodable, Signable {
+  /**
+   * @public
+   * public component of this {Lockable}
+   */
+	publicKey: PubUniKey
+}
+
+export interface PubAuthKey extends Exposable, Verifiable {}
+
+export interface PubCodeKey extends Exposable, Encodable {}
+
+export interface PubUniKey extends Exposable, Encodable, Verifiable {}
 
 /**
  * @public
@@ -172,19 +167,19 @@ extends Exposable, Lockable {
  * @see {Lockable#lock}
  * @see {Lockable#unlock}
  */
-export interface Lockable {
+export interface Lockable extends Exposable {
   /**
    * @public
    * @param  {string} secret passphrase
    * @returns {Promise<this>} new passphrase-protected instance
    */
-	lock (): Promise<this>
+	lock (secret: string, opts?: LockOpts): Promise<this>
   /**
    * @public
    * @param  {string} secret passphrase
    * @returns {Promise<this>} new instance without passphrase protection
    */
-	unlock (): Promise<this>
+	unlock (secret: string, opts?: UnlockOpts): Promise<this>
   /**
    * @public
    * @type {boolean} true if this {Lockable} is locked
@@ -192,19 +187,19 @@ export interface Lockable {
   isLocked: boolean
 }
 
+export interface LockOpts {
+  invalidate: boolean // = true
+}
+
+export interface UnlockOpts {
+  autolock: number // = OpgpProxy.config.autolock
+}
+
 /**
  * @public
  * public authenticity verification key interface
  */
 export interface Verifiable {
-  /**
-   * @public
-   * @param  {string} src
-   * @returns {Promise<string>} `src`,
-   * if proven authentic with this {Verifiable}.
-   * @error {AuthError} 'verification failure'
-   */
-	verify (src: string): Promise<string>
 }
 
 /**
@@ -259,22 +254,6 @@ export interface Exposable extends Identifiable {
    * @returns string JSON representation of this {Exposable}
    */
   toString (): string
-  /**
-   * @public
-   * @generic P extends {Publishable}
-   * @return {this is Concealable<P>}
-   */
-  isPrivateKey <P extends Exposable>(): this is Concealable<P>
-  /**
-   * @public
-   * @return {this is Encodable|Decodable}
-   */
-  isCodingKey (): this is Encodable | Decodable
-  /**
-   * @public
-   * @return {this is Signable|Verifiable}
-   */
-  isAuthKey (): this is Signable | Verifiable
 }
 
 /**
@@ -305,13 +284,12 @@ export interface Identifiable {
   expiry: number
 }
 
-class ExposableKey implements Exposable {
+class ExposableKeyClass implements Exposable {
   /**
    * @public
    * @see OpgpKeyFactory
    */
-  static getInstance <P extends Publishable>(spec: OpgpKeySpec):
-  Promise<OpgpKey> {
+  static getInstance (spec: OpgpKeySpec): Promise<OpgpKey> {
     // TODO post spec.armor to worker, receive corresponding {OpgpKeyDescriptor},
     // then create new OpgpKey with received {OpgpKeyDescriptor},
     // after deep-freeze.
@@ -324,30 +302,6 @@ class ExposableKey implements Exposable {
    */
   toString (): string {
     return JSON.stringify(this)
-  }
-
-  /**
-   * @public
-   * @return {this is Concealable<Publishable>}
-   */
-  isPrivateKey(): this is Concealable<Publishable> {
-    return this._isPrivateKey
-  }
-
-  /**
-   * @public
-   * @return {this is Encodable|Decodable}
-   */
-  isCodingKey(): this is Encodable|Decodable {
-    return this._isCodingKey
-  }
-
-  /**
-   * @public
-   * @return {this is Verifiable|Signable}
-   */
-  isAuthKey(): this is Verifiable|Signable {
-    return this._isAuthKey
   }
 
   /**
@@ -417,9 +371,6 @@ class ExposableKey implements Exposable {
       armor: { value: spec.armor, enumerable: false },
       hash: { value: spec.hash, enumerable: false },
       _handle: { value: spec.handle, enumerable: false },
-      _isPrivateKey: { value: spec.isPrivateKey, enumerable: false },
-      _isCodingKey: { value: spec.isCodingKey, enumerable: false },
-      _isAuthKey: { value: spec.isAuthKey, enumerable: false }
     })
   }
 
@@ -430,33 +381,9 @@ class ExposableKey implements Exposable {
    * temporary secret handle for this {OpgpKey}.
    */
   protected _handle : string
-
-  /**
-   * @protected
-   * @immutable
-   * @enumerable false
-   * {this is PrivateOpgpKey}
-   */
-  protected _isPrivateKey : boolean
-
-  /**
-   * @protected
-   * @immutable
-   * @enumerable false
-   * {this is EncodingOpgpKey | DecodingOpgpKey}
-   */
-  protected _isCodingKey : boolean
-
-  /**
-   * @protected
-   * @immutable
-   * @enumerable false
-   * {this is SigningOpgpKey | VerifyingOpgpKey}
-   */
-  protected _isAuthKey : boolean
 }
 
-class PublicAuthenticatingKey extends ExposableKey implements Verifiable {
+class PubAuthKeyClass extends ExposableKeyClass implements PubAuthKey {
   /**
    * @public
    * @see Verifiable#verify
@@ -470,9 +397,9 @@ class PublicAuthenticatingKey extends ExposableKey implements Verifiable {
   }
 }
 
-fixSubclass(PublicAuthenticatingKey)
+fixSubclass(PubAuthKeyClass)
 
-class PublicCodingKey extends ExposableKey implements Encodable {
+class PubCodingKeyClass extends ExposableKeyClass implements PubCodeKey {
   /**
    * @public
    * @see Encodable#encode
@@ -485,19 +412,18 @@ class PublicCodingKey extends ExposableKey implements Encodable {
   }
 }
 
-fixSubclass(PublicCodingKey)
+fixSubclass(PubCodingKeyClass)
 
-class PublicUniversalKey extends ExposableKey
-implements Verifiable, Encodable {
+class PubUniKeyClass extends ExposableKeyClass implements PubUniKey {
   /**
    * @param  {any} key
    * @returns boolean true if {this} is a universal key
    */
   static isUniversalKey (key: any): boolean {
-    if (key && (key.publicKey instanceof ExposableKey)) {
-      return PublicUniversalKey.isUniversalKey(key.publicKey)
+    if (key && (key.publicKey instanceof ExposableKeyClass)) {
+      return PubUniKeyClass.isUniversalKey(key.publicKey)
     }
-    return (key && (key instanceof PublicUniversalKey))
+    return (key && (key instanceof PubUniKeyClass))
   }
 
   /**
@@ -517,18 +443,16 @@ implements Verifiable, Encodable {
 	}
 }
 
-fixSubclass(PublicUniversalKey)
+fixSubclass(PubUniKeyClass)
 
-mixin (PublicUniversalKey, PublicAuthenticatingKey, PublicCodingKey)
+mixin (PubUniKeyClass, PubAuthKeyClass, PubCodingKeyClass)
 
-class ConcealableKey<P extends Publishable>
-extends ExposableKey
-implements Concealable<P> {
+class LockableKeyClass extends ExposableKeyClass implements Lockable {
   /**
    * @public
    * @see Lockable#lock
    */
-	lock (): Promise<this> {
+	lock (secret: string): Promise<this> {
 		return // TODO
 	}
 
@@ -536,7 +460,7 @@ implements Concealable<P> {
    * @public
    * @see Lockable#unlock
    */
-	unlock (): Promise<this> {
+	unlock (secret: string): Promise<this> {
 		return // TODO
 	}
 
@@ -546,23 +470,14 @@ implements Concealable<P> {
    */
 	isLocked: boolean
 
-  publicKey: P
-
-  constructor (spec: ConcealableKeySpec) {
+  constructor (spec: LockableKeySpec) {
     super(spec)
-    const publicKey = ExposableKey.getInstance(spec.publicKey)
-    Object.defineProperties(this, {
-      publicKey: { value: publicKey, enumerable: true },
-      isLocked: { value: spec.isLocked, enumerable: false }
-    })
   }
 }
 
-fixSubclass(ConcealableKey)
+fixSubclass(LockableKeyClass)
 
-class PrivateAuthenticatingKey<P extends Exposable & Verifiable>
-extends ConcealableKey<P>
-implements Signable {
+class SecAuthKeyClass extends LockableKeyClass implements SecAuthKey {
   /**
    * @public
    * @see Signable#sign
@@ -571,16 +486,21 @@ implements Signable {
 		return // TODO
 	}
 
-	constructor (spec: ConcealableKeySpec) {
+  publicKey: PubAuthKey
+
+	constructor (spec: LockableKeySpec) {
 		super(spec)
+    const publicKey = ExposableKeyClass.getInstance(spec.publicKey)
+    Object.defineProperties(this, {
+      publicKey: { value: publicKey, enumerable: true },
+      isLocked: { value: spec.isLocked, enumerable: false }
+    })
 	}
 }
 
-fixSubclass(PrivateAuthenticatingKey)
+fixSubclass(SecAuthKeyClass)
 
-class PrivateCodingKey<P extends Exposable & Encodable>
-extends ConcealableKey<P>
-implements Decodable {
+class SecCodingKeyClass extends LockableKeyClass implements SecCodeKey {
   /**
    * @public
    * @see Decodable#decode
@@ -589,16 +509,21 @@ implements Decodable {
 		return // TODO
 	}
 
-	constructor (spec: ConcealableKeySpec) {
+  publicKey: PubCodeKey
+
+	constructor (spec: LockableKeySpec) {
 		super(spec)
+    const publicKey = ExposableKeyClass.getInstance(spec.publicKey)
+    Object.defineProperties(this, {
+      publicKey: { value: publicKey, enumerable: true },
+      isLocked: { value: spec.isLocked, enumerable: false }
+    })
 	}
 }
 
-fixSubclass(PrivateCodingKey)
+fixSubclass(SecCodingKeyClass)
 
-class PrivateUniversalKey<P extends Exposable & Verifiable & Encodable>
-extends ConcealableKey<P>
-implements Signable, Decodable {
+class SecUniKeyClass extends LockableKeyClass implements SecUniKey {
   /**
    * @public
    * @see Signable#sign
@@ -611,14 +536,21 @@ implements Signable, Decodable {
    */
 	decode: (src: string) => Promise<string>
 
-	constructor (spec: ConcealableKeySpec) {
+  publicKey: PubUniKey
+
+	constructor (spec: LockableKeySpec) {
 		super(spec)
+    const publicKey = ExposableKeyClass.getInstance(spec.publicKey)
+    Object.defineProperties(this, {
+      publicKey: { value: publicKey, enumerable: true },
+      isLocked: { value: spec.isLocked, enumerable: false }
+    })
 	}
 }
 
-fixSubclass(PrivateUniversalKey)
+fixSubclass(SecUniKeyClass)
 
-mixin(PrivateUniversalKey, PrivateAuthenticatingKey, PrivateCodingKey)
+mixin(SecUniKeyClass, SecAuthKeyClass, SecCodingKeyClass)
 
 /**
  * @private
@@ -634,13 +566,13 @@ interface PublishableKeySpec extends Identifiable {
    * @private
    * {this is PrivateOpgpKey}
    */
-  isPrivateKey : boolean
+  isSecKey : boolean
 
   /**
    * @private
    * {this is EncodingOpgpKey | DecodingOpgpKey}
    */
-  isCodingKey : boolean
+  isCodeKey : boolean
 
   /**
    * @private
@@ -655,7 +587,7 @@ interface PublishableKeySpec extends Identifiable {
   userids?: string[]
 }
 
-interface ConcealableKeySpec extends PublishableKeySpec {
+interface LockableKeySpec extends PublishableKeySpec {
   publicKey: PublishableKeySpec,
   isLocked: boolean
 }
@@ -664,4 +596,4 @@ interface ConcealableKeySpec extends PublishableKeySpec {
  * @public
  * @see OpgpKeyFactory
  */
-export const getOpgpKey: OpgpKeyFactory = ExposableKey.getInstance
+export const getOpgpKey: OpgpKeyFactory = ExposableKeyClass.getInstance

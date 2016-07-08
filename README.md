@@ -457,89 +457,222 @@ however, in case of private keys,
 the new instance will always be locked by default,
 regardless of whether the stale instance had been unlocked or not.
 
-The `OpgpKey` type alias is a union of the following:
-* [`Publishable`](#api.opgp-key.publishable) type alias
-that represents public keys
-* [`Concealable<Publishable>`](#api.opgp-key.concealable) interface
+The `OpgpKey` type alias is a type union of the following type aliases:
+* [`SecKey`](#api.opgp-key.sec-key) type alias
 that represents private keys
+* [`PubKey`](#api.opgp-key.pub-key) type alias
+that represents public keys
 
 In other words, the `OpgpKey` type alias represents either
 a public, or a private key.
 
+All `OpgpKey` instances extend the [`Exposable`] interface,
+which exposes public information about the key.
+
 ### syntax
 ```typescript
-type OpgpKey = Publishable | Concealable<Publishable>
+type OpgpKey = SecKey | PubKey
 ```
 
-##  <a name="api.opgp-key.publishable"></a> type alias `Publishable`
+##  <a name="api.opgp-key.exposable"></a> interface `Exposable`
 ### description
-The `Publishable` type alias represents public key instances.
-
-More specifically, these are [`Exposable`](#api.opgp-key.exposable) instances
-that are either [`Encodable`](#api.opgp-key.encodable),
-or [`Verifiable`](#api.opgp-key.verifiable),
-or both.
-
-In other words, `Publishable` instances expose properties about the key
-through the [`Exposable`](#api.opgp-key.exposable) interface,
-as well as [`Encodable#encode`](#api.opgp-key.encodable.encode)
-and/or [`Verifiable#verify`](#api.opgp-key.verifiable.verify) methods
-through the [`Encodable`](#api.opgp-key.encodable)
-and [`Verifiable`](#api.opgp-key.verifiable) interfaces respectively.
+Instances of the `Exposable` interface expose public information about these.
+All [`OpgpKey`](#api.opgp-key) instances are `Exposable`.
 
 ### syntax
 ```typescript
-type Publishable =
-Exposable & (Encodable | Verifiable | (Encodable & Verifiable))
-```
-
-##  <a name="api.opgp-key.concealable"></a> interface `Concealable<P extends Publishable>`
-### description
-The `Concealable` interface represents private key instances.
-
-More specifically, these are [`Exposable`](#api.opgp-key.exposable) instances
-that are additionally [`Lockable`](#api.opgp-key.lockable).
-
-In other words, `Concealable` instances expose properties about the key
-through the [`Exposable`](#api.opgp-key.exposable) interface,
-as well as [`Lockable#lock`](#api.opgp-key.lockable.lock)
-and [`Lockable#unlock`](#api.opgp-key.lockable.unlock) methods
-through the [`Lockable`](#api.opgp-key.lockable) interface.
-
-Additionally, `Concealable` instances also expose
-a `Concealable#publicKey` property holding
-their [`Publishable`](#api.opgp-key.publishable) public key component.
-The type of that [`Publishable`](#api.opgp-key.publishable)
-defines that of the `Concealable`,
-and is hence the generic type parameter of the `Concealable`.
-
-The more specialised [`RootConcealable`](#api.opgp-key.root-concealable)
-interface, that extends the `Concealable` interface, represents primary keys,
-which additionally expose subkeys and owner information.
-
-### syntax
-```typescript
-interface Concealable<P extends Publishable> extends Exposable, Lockable {
-	publicKey: P
+interface Exposable extends Identifiable {
+  toString (): string
+  hash: string
+  id: string
+  fingerprint: string
+  armor: string
+  expiry: number
 }
 ```
 
-##  <a name="api.opgp-key.root-concealable"></a> interface `RootConcealable<P extends Publishable>`
+##  <a name="api.opgp-key.pub-key"></a> type alias `PubKey`
 ### description
-The `RootConcealable` interface represents intances of primary keys.
+The `PubKey` type alias represents public key instances.
 
-More specifically, these are [`Concealable`](#api.opgp-key.concealable)
-instances that additionally expose
-an [`Immutable.List`](https://facebook.github.io/immutable-js/)
-of [`Concealable`](#api.opgp-key.concealable) subkey instances
-and an [`Immutable.List`](https://facebook.github.io/immutable-js/)
-of user id strings.
+More specifically, the `PubKey` type alias is a type union
+of the following interfaces:
+* [`PubAuthKey`](api.opgp-key.pub-auth-key) interface
+that represents public authentication keys for verifying signatures
+* [`PubCodeKey`](api.opgp-key.pub-code-key) interface
+that represents public coding keys for encoding a text
+* [`PubUniKey`](api.opgp-key.pub-uni-key) interface
+that represents public universal keys for both
+verifying signatures and encoding text
 
 ### syntax
 ```typescript
-export interface RootConcealable<P extends Publishable> extends Concealable<P> {
-  keys: Immutable.List<Concealable<Publishable>>
-  userids: Immutable.List<string>
+type PubKey = PubAuthKey | PubCodeKey | PubUniKey
+```
+
+##  <a name="api.opgp-key.pub-auth-key"></a> type alias `PubAuthKey`
+### description
+The `PubAuthKey` interface represents public authentication keys
+for verifying signatures,
+with the [`Verifiable#verify`](#api.opgp-key.verifiable) method
+from the [`Verifiable`](#api.opgp-key.verifiable) interface.
+
+Like all other [`OpgpKey`](#api.opgp-key) types,
+`PubAuthKey` instances also expose public information about the key
+through the [`Exposable`] interface.
+
+### syntax
+```typescript
+interface PubAuthKey extends Exposable, Verifiable {}
+```
+
+##  <a name="api.opgp-key.pub-code-key"></a> type alias `PubCodeKey`
+### description
+The `PubCodeKey` interface represents public coding keys
+for encoding a text,
+with the [`Encodable#encode`](#api.opgp-key.encodable) method
+from the [`Encodable`](#api.opgp-key.encodable) interface.
+
+Like all other [`OpgpKey`](#api.opgp-key) types,
+`PubCodeKey` instances also expose public information about the key
+through the [`Exposable`] interface.
+
+### syntax
+```typescript
+interface PubCodeKey extends Exposable, Encodable {}
+```
+
+##  <a name="api.opgp-key.pub-code-key"></a> type alias `PubCodeKey`
+### description
+The `PubUniKey` interface represents public universal keys
+for both verifying signatures and encoding a text,
+* with the [`Verifiable#verify`](#api.opgp-key.verifiable) method
+from the [`Verifiable`](#api.opgp-key.verifiable) interface, and
+* with the [`Encodable#verify`](#api.opgp-key.encodable) method
+from the [`Encodable`](#api.opgp-key.encodable) interface.
+
+Like all other [`OpgpKey`](#api.opgp-key) types,
+`PubUniKey` instances also expose public information about the key
+through the [`Exposable`] interface.
+
+### syntax
+```typescript
+interface PubUniKey extends Exposable, Encodable, Verifiable {}
+```
+
+##  <a name="api.opgp-key.sec-key"></a> type alias `SecKey`
+### description
+The `SecKey` type alias represents secret key instances.
+
+More specifically, the `SecKey` type alias is a type union
+of the following interfaces:
+* [`SecAuthKey`](api.opgp-key.sec-auth-key) interface
+that represents private authentication keys for signing a text
+* [`SecCodeKey`](api.opgp-key.sec-code-key) interface
+that represents private coding keys for decoding a text
+* [`SecUniKey`](api.opgp-key.sec-uni-key) interface
+that represents private universal keys for both
+signing and decoding a text
+
+All `SecKey` instances expose
+* [`Lockable#lock`](#api.opgp-key.lockable.lock) and
+[`Lockable#unlock`](#api.opgp-key.lockable.unlock) methods,
+and an [`Lockable#isLocked`](#api.opgp-key.lockable) property
+through the [`Lockable`](#api.opgp-key.lockable) interface
+to respectively lock and unlock the key with a secret passphrase,
+and to obtain the status of the key,
+* a `publicKey` property with their `PubKey` public key component.
+
+Like all other [`OpgpKey`](#api.opgp-key) types,
+`SecAuthKey` instances also expose public information about the key
+through the [`Exposable`] interface.
+
+A specialized `SecKey` type is the [`RootKey`](#api.opgp-key.root-key) type,
+which represents primary keys, that bundle `SecKey` subkeys and user id strings.
+
+##  <a name="api.opgp-key.sec-auth-key"></a> type alias `SecAuthKey`
+### description
+The `SecAuthKey` interface represents private authentication keys
+for signing a text,
+with the [`Signable#sign`](#api.opgp-key.signable) method
+from the [`Signable`](#api.opgp-key.signable) interface.
+
+Like all other [`SecKey`](#api.opgp-key.sec-key) intances,
+`SecAuthKey` instances expose
+* [`Lockable#lock`](#api.opgp-key.lockable.lock) and
+[`Lockable#unlock`](#api.opgp-key.lockable.unlock) methods
+and an [`Lockable#isLocked`](#api.opgp-key.lockable) property
+through the [`Lockable`](#api.opgp-key.lockable) interface
+to respectively lock and unlock the key with a secret passphrase,
+and to obtain the status of the key,
+* a `publicKey` property with their `PubAuthKey` public key component.
+
+Like all other [`OpgpKey`](#api.opgp-key) types,
+`SecAuthKey` instances also expose public information about the key
+through the [`Exposable`] interface.
+
+### syntax
+```typescript
+interface SecAuthKey extends Lockable, Signable {
+	publicKey: PubAuthKey
+}
+```
+
+##  <a name="api.opgp-key.sec-code-key"></a> type alias `SecCodeKey`
+### description
+The `SecCodeKey` interface represents private coding keys
+for decoding a text,
+with the [`Decodable#decode`](#api.opgp-key.decodable) method
+from the [`Decodable`](#api.opgp-key.decodable) interface.
+
+Like all other [`SecKey`](#api.opgp-key.sec-key) intances,
+`SecCodeKey` instances expose
+* [`Lockable#lock`](#api.opgp-key.lockable.lock) and
+[`Lockable#unlock`](#api.opgp-key.lockable.unlock) methods
+and an [`Lockable#isLocked`](#api.opgp-key.lockable) property
+through the [`Lockable`](#api.opgp-key.lockable) interface
+to respectively lock and unlock the key with a secret passphrase,
+and to obtain the status of the key,
+* a `publicKey` property with their `PubCodeKey` public key component.
+
+Like all other [`OpgpKey`](#api.opgp-key) types,
+`SecCodeKey` instances also expose public information about the key
+through the [`Exposable`] interface.
+
+### syntax
+```typescript
+interface SecCodeKey extends Lockable, Decodable {
+	publicKey: PubCodeKey
+}
+```
+
+##  <a name="api.opgp-key.sec-code-key"></a> type alias `SecCodeKey`
+### description
+The `SecUniKey` interface represents private universal keys
+for both signing and decoding a text,
+* with the [`Signable#sign`](#api.opgp-key.signable) method
+from the [`Signable`](#api.opgp-key.signable) interface, and
+* with the [`Decodable#decode`](#api.opgp-key.decodable) method
+from the [`Decodable`](#api.opgp-key.decodable) interface.
+
+Like all other [`SecKey`](#api.opgp-key.sec-key) intances,
+`SecUniKey` instances expose
+* [`Lockable#lock`](#api.opgp-key.lockable.lock) and
+[`Lockable#unlock`](#api.opgp-key.lockable.unlock) methods
+and an [`Lockable#isLocked`](#api.opgp-key.lockable) property
+through the [`Lockable`](#api.opgp-key.lockable) interface
+to respectively lock and unlock the key with a secret passphrase,
+and to obtain the status of the key,
+* a `publicKey` property with their `PubUniKey` public key component.
+
+Like all other [`OpgpKey`](#api.opgp-key) types,
+`SecUniKey` instances also expose public information about the key
+through the [`Exposable`] interface.
+
+### syntax
+```typescript
+interface SecUniKey extends Lockable, Decodable, Signable {
+	publicKey: PubUniKey
 }
 ```
 
@@ -547,8 +680,8 @@ export interface RootConcealable<P extends Publishable> extends Concealable<P> {
 ### description
 Instances of the `Lockable` interface may be locked and unlocked
 with a secret passphrase.
-[`Concealable`](#api.opgp-key.concealable) instances are specialized
-`Lockable` instances.
+
+All [`SecKey`](#api.opgp-key.sec-key) instances expose the `Lockable` interface.
 
 This interface exposes [`Lockable#lock`](#api.opgp-key.lockable.lock)
 and [`Lockable#unlock`](#api.opgp-key.lockable.unlock) methods.
@@ -565,51 +698,61 @@ Since they mutate the state of the underlying [openpgp](https://openpgpjs.org)
 key in a security-critical way,
 the [`Lockable#lock`](#api.opgp-key.lockable.lock)
 and [`Lockable#unlock`](#api.opgp-key.lockable.unlock) methods
-return a new immutable [`Concealable`](#api.opgp-key.concealable) instance.
+return a new immutable [`SecKey`](#api.opgp-key.sec-key) instance
+of the same type.
 
-Furthermore, the [`Lockable#lock`](#api.opgp-key.lockable.lock) method
-immediately invalidates its `Lockable` instance,
+The [`Lockable#lock`](#api.opgp-key.lockable.lock) method
+by default immediately invalidates its `Lockable` instance,
 which then becomes permanently stale.
+This behavior can be disabled by setting the `opts.invalidate` option
+of the [`Lockable#lock`](#api.opgp-key.lockable.lock) method to false.
+
+When a `Lockable` instance is unlocked,
+it stays unlocked for a given length of time,
+as defined by the `opts.autolock` option
+of the [`Lockable#unlock`](#api.opgp-key.lockable.unlock) methods,
+after which the instance automatically becomes stale.
+The `opts.autolock` option defaults to the default value
+of the [`OpgpProxy`](#api.opgp-proxy).
 
 Finally, the immutable state of a `Lockable` instance is exposed
 by its `isLocked` property.
 
 ### syntax
 ```typescript
-interface Lockable {
-	lock (): Promise<this>
-	unlock (): Promise<this>
+interface Lockable extends Exposable {
+	lock (secret: string, opts?: LockOpts): Promise<this>
+	unlock (secret: string, opts?: UnlockOpts): Promise<this>
   isLocked: boolean
 }
-```
 
-##  <a name="api.opgp-key.exposable"></a> interface `Exposable`
-### description
-Instances of the `Exposable` interface expose public information about these.
-All [`OpgpKey`](#api.opgp-key) instances are `Exposable`.
+interface LockOpts {
+  invalidate: boolean // = true
+}
 
-### syntax
-```typescript
-interface Exposable extends Identifiable {
-  toString (): string
-  isPrivateKey <P extends Exposable>(): this is Concealable<P>
-  isCodingKey (): this is Encodable | Decodable
-  isAuthKey (): this is Signable | Verifiable
-  hash: string
-  id: string
-  fingerprint: string
-  armor: string
-  expiry: number
+interface UnlockOpts {
+  autolock: number // = OpgpProxy.config.autolock
 }
 ```
 
-##  <a name="api.opgp-key"></a> interface `OpgpKey`
+##  <a name="api.opgp-key.root-key"></a> type alias `RootKey`
 ### description
+The type alias represents primary key instances.
 
-### syntax
-```typescript
+All `RootKey` instances are specialized
+[`SecKey`](#api.opgp-key.sec-key) instances.
 
-```
+More specifically, the `RootKey` type alias is a type union
+of the following interfaces:
+* [`RootAuthKey`](api.opgp-key.root-auth-key) interface
+that represents primary authentication keys
+and exposes the [`SecAuthKey`](#api.opgp-key.sec-auth-key) interface
+* [`RootCodeKey`](api.opgp-key.root-code-key) interface
+that represents primary coding keys
+and exposes the [`SecCodeKey`](#api.opgp-key.sec-code-key) interface
+* [`RootUniKey`](api.opgp-key.root-uni-key) interface
+that represents primary universal keys
+and exposes the [`SecUniKey`](#api.opgp-key.sec-uni-key) interface
 
 ### errors
 flow | type | message | data
