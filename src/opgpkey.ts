@@ -200,6 +200,12 @@ export interface UnlockOpts {
  * public authenticity verification key interface
  */
 export interface Verifiable {
+  /**
+   * @public
+   * @param  {string} src
+   * @returns {Promise<string>} extracted text, without signature.
+   */
+	verify (src: string): Promise<string>
 }
 
 /**
