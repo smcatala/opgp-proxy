@@ -847,7 +847,7 @@ interface RootUniKey extends SecUniKey, Belongings {}
 The `Verifiable` interface exposes a single `verify` method
 for verifying the signature of an armored authenticated `src` string
 with this instance of [`PubAuthKey`](#api.opgp-key.pub-auth-key)
-or [`PubUniKey`](#api.opgp-key.pub-auth-key).
+or [`PubUniKey`](#api.opgp-key.pub-uni-key).
 
 ### syntax
 ```typescript
@@ -863,7 +863,7 @@ export interface VerifyOpts {} // ignored in current implementation
 The `Encodable` interface exposes a single `encode` method
 for encoding a `src` string
 with this instance of [`PubCodeKey`](#api.opgp-key.pub-code-key)
-or [`PubUniKey`](#api.opgp-key.pub-auth-key).
+or [`PubUniKey`](#api.opgp-key.pub-uni-key).
 
 ### syntax
 ```typescript
@@ -879,7 +879,7 @@ interface EncodeOpts {} // ignored in current implementation
 The `Signable` interface exposes a single `sign` method
 for signing the `src` string
 with this instance of [`SecAuthKey`](#api.opgp-key.sec-auth-key)
-or [`SecUniKey`](#api.opgp-key.sec-auth-key).
+or [`SecUniKey`](#api.opgp-key.sec-uni-key).
 
 ### syntax
 ```typescript
@@ -895,7 +895,7 @@ interface SignOpts {} // ignored in current implementation
 The `Decodable` interface exposes a single `decode` method
 for decoding an armored encoded `src` string
 with this instance of [`SecCodeKey`](#api.opgp-key.sec-code-key)
-or [`SecUniKey`](#api.opgp-key.sec-auth-key).
+or [`SecUniKey`](#api.opgp-key.sec-uni-key).
 
 ### syntax
 ```typescript
@@ -906,16 +906,15 @@ interface Decodable {
 export interface DecodeOpts {} // ignored in current implementation
 ```
 
-##  <a name="api.opgp-key.verifiable"></a> interface `Verifiable`
+##  <a name="api.opgp-key.verifiable.verify"></a> method `Verifiable#verify`
 ### description
-The `Verifiable` interface exposes a single `verify` method
-for verifying the signature of an armored authenticated `src` string
+Verify the signature of an armored authenticated `src` string
 with this instance of [`PubAuthKey`](#api.opgp-key.pub-auth-key)
-or [`PubUniKey`](#api.opgp-key.pub-auth-key).
+or [`PubUniKey`](#api.opgp-key.pub-uni-key).
 
 ### syntax
 ```typescript
-  (src: string, opts?: VerifyOpts): Promise<string>
+verify (src: string, opts?: VerifyOpts): Promise<string>
 ```
 
 #### param `src: string`
@@ -931,8 +930,34 @@ unsigned text extracted from `src`
 flow | type | message | data
 -----|------|---------|---------
 async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
-async|`Error`|invalid key|N/A|this `OpgpKey` is either stale or unknown
+async|`Error`|invalid key|N/A|this `PubAuthKey` or `PubUniKey` is either stale or unknown
 async|`Error`|verify error|N/A|the `src` string was not signed with this `OpgpKey`
+
+##  <a name="api.opgp-key.encodable.encode"></a> method `Encodable#encode`
+### description
+Encode a `src` string with this instance
+of [`PubCodehKey`](#api.opgp-key.pub-code-key)
+or [`PubUniKey`](#api.opgp-key.pub-uni-key).
+
+### syntax
+```typescript
+encode (src: string, opts?: EncodeOpts): Promise<string>
+```
+
+#### param `src: string`
+the string to encode
+
+#### param `opts?: EncodeOpts`
+ignored in current implementation
+
+#### return `Promise<string>`
+result of encoding the `src` string with this instance
+
+### errors
+flow | type | message | data
+-----|------|---------|---------
+async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
+async|`Error`|invalid key|N/A|this `PubAuthKey` or `PubUniKey` is either stale or unknown
 
 # <a name="license"></a> LICENSE
 Copyright 2016 Stéphane M. Catala
