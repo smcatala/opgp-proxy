@@ -693,10 +693,6 @@ is decrypting it with the passphrase that was used to lock it.
 
 All [`SecKey`](#api.opgp-key.sec-key) instances are `Lockable` instances.
 
-This functionality is provided by
-[openpgp](https://openpgpjs.org/openpgpjs/doc/module-openpgp.html)
-in the [openpgp](https://openpgpjs.org) worker.
-
 Since they mutate the state of the underlying [openpgp](https://openpgpjs.org)
 key in a security-critical way,
 the [`Lockable#lock`](#api.opgp-key.lockable.lock)
@@ -713,7 +709,7 @@ of the [`Lockable#lock`](#api.opgp-key.lockable.lock) method to false.
 When a `Lockable` instance is unlocked,
 it stays unlocked for a given length of time,
 as defined by the `opts.autolock` option
-of the [`Lockable#unlock`](#api.opgp-key.lockable.unlock) methods,
+of the [`Lockable#unlock`](#api.opgp-key.lockable.unlock) method,
 after which the instance automatically becomes stale.
 The `opts.autolock` option defaults to the default value
 of the [`OpgpProxy`](#api.opgp-proxy).
@@ -906,6 +902,111 @@ interface Decodable {
 export interface DecodeOpts {} // ignored in current implementation
 ```
 
+##  <a name="api.opgp-key.lockable.lock"></a> method `Lockable#lock`
+### description
+Lock this instance of [`SecKey`](#api.opgp-key.sec-key)
+by encoding it with a secret passphrase.
+
+Since this method mutates the state
+of the underlying [openpgp](https://openpgpjs.org)
+key in a security-critical way,
+it returns a new immutable [`SecKey`](#api.opgp-key.sec-key) instance
+of the same type.
+
+The [`Lockable#lock`](#api.opgp-key.lockable.lock) method
+by default immediately invalidates
+its [`SecKey`](#api.opgp-key.sec-key) instance,
+which then becomes permanently stale.
+This behavior can be disabled by setting the `opts.invalidate` option to false.
+
+### syntax
+```typescript
+interface Lockable {
+  // ...
+	lock (secret: string, opts?: LockOpts): Promise<this>
+}
+```
+
+#### param `secret: string`
+should be a cryptographically secure random string with which to encode
+this instance of [`SecKey`](#api.opgp-key.sec-key).
+
+#### param `opts?: LockOpts`
+```typescript
+interface LockOpts {
+  invalidate: boolean // = true
+}
+```
+* `invalidate: boolean`
+true by default,
+false disables automatic invalidation
+of this [`SecKey`](#api.opgp-key.sec-key) instance.
+
+#### return `Promise<string>`
+new immutable [`SecKey`](#api.opgp-key.sec-key) instance
+of the same type as this [`SecKey`](#api.opgp-key.sec-key) instance
+encoded with the `secret` passphrase.
+
+### errors
+flow | type | message | data
+-----|------|---------|---------
+async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
+async|`Error`|invalid key|N/A|this `SecKey` is either stale or unknown
+async|`Error`|lock error|N/A|this `SecKey` is already locked, i.e. `this.isLocked === true`, and must first be unlocked
+
+##  <a name="api.opgp-key.lockable.unlock"></a> method `Lockable#unlock`
+### description
+Unlock this instance of [`SecKey`](#api.opgp-key.sec-key)
+by decoding it with the secret passphrase with which it was encoded.
+
+Since this method mutates the state
+of the underlying [openpgp](https://openpgpjs.org)
+key in a security-critical way,
+it returns a new immutable [`SecKey`](#api.opgp-key.sec-key) instance
+of the same type.
+
+When a [`SecKey`](#api.opgp-key.sec-key) instance is unlocked,
+it stays unlocked for a given length of time,
+as defined by the `opts.autolock` option,
+after which the instance automatically becomes stale.
+The `opts.autolock` option defaults to the default value
+of the [`OpgpProxy`](#api.opgp-proxy).
+
+### syntax
+```typescript
+interface Lockable {
+  // ...
+	unlock (secret: string, opts?: UnlockOpts): Promise<this>
+}
+```
+
+#### param `secret: string`
+the secret string with which this instance
+of [`SecKey`](#api.opgp-key.sec-key) was encoded
+
+#### param `opts?: UnlockOpts`
+```typescript
+interface UnlockOpts {
+  autolock: number // = OpgpProxy.config.autolock
+}
+```
+* `autolock: number`
+same default value as that of the [`OpgpProxy`](#api.opgp-proxy),
+delay after which this [`SecKey`](#api.opgp-key.sec-key) instance
+is invalidated, i.e. becomes stale, after unlocking.
+
+#### return `Promise<string>`
+new immutable [`SecKey`](#api.opgp-key.sec-key) instance
+of the same type as this [`SecKey`](#api.opgp-key.sec-key) instance
+decoded with the `secret` passphrase.
+
+### errors
+flow | type | message | data
+-----|------|---------|---------
+async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
+async|`Error`|invalid key|N/A|this `SecKey` is either stale or unknown
+async|`Error`|unlock error|N/A|this `SecKey` is already unlocked or was not encoded with the given `secret` passphrase
+
 ##  <a name="api.opgp-key.verifiable.verify"></a> method `Verifiable#verify`
 ### description
 Verify the signature of an armored authenticated `src` string
@@ -914,7 +1015,9 @@ or [`PubUniKey`](#api.opgp-key.pub-uni-key).
 
 ### syntax
 ```typescript
-verify (src: string, opts?: VerifyOpts): Promise<string>
+interface Verifiable {
+  verify (src: string, opts?: VerifyOpts): Promise<string>
+}
 ```
 
 #### param `src: string`
@@ -941,7 +1044,9 @@ or [`PubUniKey`](#api.opgp-key.pub-uni-key).
 
 ### syntax
 ```typescript
-encode (src: string, opts?: EncodeOpts): Promise<string>
+interface Encodable {
+  encode (src: string, opts?: EncodeOpts): Promise<string>
+}
 ```
 
 #### param `src: string`
