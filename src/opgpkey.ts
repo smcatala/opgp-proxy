@@ -228,16 +228,9 @@ export interface Encodable {
 }
 
 /**
- * optional settings for {Encodable#encode}
+ * ignored in current implementation
  */
-export interface EncodeOpts {
-  /**
-   * Encrypt-then-MAC when true.
-   * Otherwise force openpgp Mac-then-Encrypt.
-   * default: true
-   */
-  etm?: boolean
-}
+export interface EncodeOpts {}
 
 /**
  * @public
