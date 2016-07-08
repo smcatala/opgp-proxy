@@ -842,9 +842,97 @@ of user id strings.
 interface RootUniKey extends SecUniKey, Belongings {}
 ```
 
+##  <a name="api.opgp-key.verifiable"></a> interface `Verifiable`
+### description
+The `Verifiable` interface exposes a single `verify` method
+for verifying the signature of an armored authenticated `src` string
+with this instance of [`PubAuthKey`](#api.opgp-key.pub-auth-key)
+or [`PubUniKey`](#api.opgp-key.pub-auth-key).
+
+### syntax
+```typescript
+export interface Verifiable {
+	verify (src: string, opts?: VerifyOpts): Promise<string>
+}
+
+export interface VerifyOpts {} // ignored in current implementation
+```
+
+##  <a name="api.opgp-key.encodable"></a> interface `Encodable`
+### description
+The `Encodable` interface exposes a single `encode` method
+for encoding a `src` string
+with this instance of [`PubCodeKey`](#api.opgp-key.pub-code-key)
+or [`PubUniKey`](#api.opgp-key.pub-auth-key).
+
+### syntax
+```typescript
+interface Encodable {
+	encode (src: string, opts?: EncodeOpts): Promise<string>
+}
+
+interface EncodeOpts {} // ignored in current implementation
+```
+
+##  <a name="api.opgp-key.signable"></a> interface `Signable`
+### description
+The `Signable` interface exposes a single `sign` method
+for signing the `src` string
+with this instance of [`SecAuthKey`](#api.opgp-key.sec-auth-key)
+or [`SecUniKey`](#api.opgp-key.sec-auth-key).
+
+### syntax
+```typescript
+interface Signable {
+	sign (src: string, opts?: SignOpts): Promise<string>
+}
+
+interface SignOpts {} // ignored in current implementation
+```
+
+##  <a name="api.opgp-key.decodable"></a> interface `Decodable`
+### description
+The `Decodable` interface exposes a single `decode` method
+for decoding an armored encoded `src` string
+with this instance of [`SecCodeKey`](#api.opgp-key.sec-code-key)
+or [`SecUniKey`](#api.opgp-key.sec-auth-key).
+
+### syntax
+```typescript
+interface Decodable {
+	decode (src: string, opts?: DecodeOpts): Promise<string>
+}
+
+export interface DecodeOpts {} // ignored in current implementation
+```
+
+##  <a name="api.opgp-key.verifiable"></a> interface `Verifiable`
+### description
+The `Verifiable` interface exposes a single `verify` method
+for verifying the signature of an armored authenticated `src` string
+with this instance of [`PubAuthKey`](#api.opgp-key.pub-auth-key)
+or [`PubUniKey`](#api.opgp-key.pub-auth-key).
+
+### syntax
+```typescript
+  (src: string, opts?: VerifyOpts): Promise<string>
+```
+
+#### param `src: string`
+armored authenticated string
+
+#### param `opts?: VerifyOpts`
+ignored in current implementation
+
+#### return `Promise<string>`
+unsigned text extracted from `src`
+
 ### errors
 flow | type | message | data
 -----|------|---------|---------
+async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
+async|`Error`|invalid key|N/A|this `OpgpKey` is either stale or unknown
+async|`Error`|verify error|N/A|the `src` string was not signed with this `OpgpKey`
 
 # <a name="license"></a> LICENSE
 Copyright 2016 Stéphane M. Catala
