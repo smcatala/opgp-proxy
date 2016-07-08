@@ -788,7 +788,7 @@ interface Belongings {
 }
 ```
 
-##  <a name="api.opgp-key.root-auth-key"></a> type alias `RootAuthKey`
+##  <a name="api.opgp-key.root-auth-key"></a> interface `RootAuthKey`
 ### description
 The `RootAuthKey` interface represents a primary key
 that is itself a secret authentication key for signing texts.
@@ -806,7 +806,7 @@ of user id strings.
 interface RootAuthKey extends SecAuthKey, Belongings {}
 ```
 
-##  <a name="api.opgp-key.root-code-key"></a> type alias `RootCodeKey`
+##  <a name="api.opgp-key.root-code-key"></a> interface `RootCodeKey`
 ### description
 The `RootCodeKey` interface represents a primary key
 that is itself a secret authentication key for signing texts.
@@ -824,7 +824,7 @@ of user id strings.
 interface RootCodeKey extends SecCodeKey, Belongings {}
 ```
 
-##  <a name="api.opgp-key.root-auth-key"></a> type alias `RootUniKey`
+##  <a name="api.opgp-key.root-auth-key"></a> interface `RootUniKey`
 ### description
 The `RootUniKey` interface represents a primary key
 that is itself a secret authentication key for signing texts.

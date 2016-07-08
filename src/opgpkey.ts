@@ -62,7 +62,7 @@ export interface OpgpKeySpec {
  * @see {Publishable}
  * @see {Concealable}
  */
-export type OpgpKey = SecKey | PubKey
+export type OpgpKey = RootKey | SecKey | PubKey
 
 export type RootKey = RootAuthKey | RootCodeKey | RootUniKey
 
@@ -97,7 +97,7 @@ export interface Belongings {
    * @public
    * list of private subkey instances of this {Extendable}
    */
-  keys: FList<OpgpKey>
+  keys: FList<SecKey>
   /**
    * @public
    * ordered list of openpgp user ids,
