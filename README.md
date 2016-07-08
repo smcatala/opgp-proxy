@@ -458,20 +458,23 @@ the new instance will always be locked by default,
 regardless of whether the stale instance had been unlocked or not.
 
 The `OpgpKey` type alias is a type union of the following type aliases:
-* [`SecKey`](#api.opgp-key.sec-key) type alias
-that represents private keys
 * [`PubKey`](#api.opgp-key.pub-key) type alias
 that represents public keys
+* [`SecKey`](#api.opgp-key.sec-key) type alias
+that represents private keys
+* [`RootKey`](#api.opgp-key.root-key) type alias
+that represents primary keys,
+a special type of [`SecKey`](#api.opgp-key.sec-key)
 
 In other words, the `OpgpKey` type alias represents either
-a public, or a private key.
+a public, private, or primary key.
 
 All `OpgpKey` instances extend the [`Exposable`] interface,
 which exposes public information about the key.
 
 ### syntax
 ```typescript
-type OpgpKey = SecKey | PubKey
+type OpgpKey = RootKey | SecKey | PubKey
 ```
 
 ##  <a name="api.opgp-key.exposable"></a> interface `Exposable`
@@ -514,7 +517,7 @@ type PubKey = PubAuthKey | PubCodeKey | PubUniKey
 ### description
 The `PubAuthKey` interface represents public authentication keys
 for verifying signatures,
-with the [`Verifiable#verify`](#api.opgp-key.verifiable) method
+with the [`Verifiable#verify`](#api.opgp-key.verifiable.verify) method
 from the [`Verifiable`](#api.opgp-key.verifiable) interface.
 
 Like all other [`OpgpKey`](#api.opgp-key) types,
@@ -530,7 +533,7 @@ interface PubAuthKey extends Exposable, Verifiable {}
 ### description
 The `PubCodeKey` interface represents public coding keys
 for encoding a text,
-with the [`Encodable#encode`](#api.opgp-key.encodable) method
+with the [`Encodable#encode`](#api.opgp-key.encodable.encode) method
 from the [`Encodable`](#api.opgp-key.encodable) interface.
 
 Like all other [`OpgpKey`](#api.opgp-key) types,
@@ -542,13 +545,13 @@ through the [`Exposable`] interface.
 interface PubCodeKey extends Exposable, Encodable {}
 ```
 
-##  <a name="api.opgp-key.pub-code-key"></a> type alias `PubCodeKey`
+##  <a name="api.opgp-key.pub-uni-key"></a> type alias `PubUniKey`
 ### description
 The `PubUniKey` interface represents public universal keys
 for both verifying signatures and encoding a text,
-* with the [`Verifiable#verify`](#api.opgp-key.verifiable) method
+* with the [`Verifiable#verify`](#api.opgp-key.verifiable.verify) method
 from the [`Verifiable`](#api.opgp-key.verifiable) interface, and
-* with the [`Encodable#verify`](#api.opgp-key.encodable) method
+* with the [`Encodable#verify`](#api.opgp-key.encodable.encode) method
 from the [`Encodable`](#api.opgp-key.encodable) interface.
 
 Like all other [`OpgpKey`](#api.opgp-key) types,
@@ -594,7 +597,7 @@ which represents primary keys, that bundle `SecKey` subkeys and user id strings.
 ### description
 The `SecAuthKey` interface represents private authentication keys
 for signing a text,
-with the [`Signable#sign`](#api.opgp-key.signable) method
+with the [`Signable#sign`](#api.opgp-key.signable.sign) method
 from the [`Signable`](#api.opgp-key.signable) interface.
 
 Like all other [`SecKey`](#api.opgp-key.sec-key) intances,
@@ -622,7 +625,7 @@ interface SecAuthKey extends Lockable, Signable {
 ### description
 The `SecCodeKey` interface represents private coding keys
 for decoding a text,
-with the [`Decodable#decode`](#api.opgp-key.decodable) method
+with the [`Decodable#decode`](#api.opgp-key.decodable.decode) method
 from the [`Decodable`](#api.opgp-key.decodable) interface.
 
 Like all other [`SecKey`](#api.opgp-key.sec-key) intances,
@@ -650,9 +653,9 @@ interface SecCodeKey extends Lockable, Decodable {
 ### description
 The `SecUniKey` interface represents private universal keys
 for both signing and decoding a text,
-* with the [`Signable#sign`](#api.opgp-key.signable) method
+* with the [`Signable#sign`](#api.opgp-key.signable.sign) method
 from the [`Signable`](#api.opgp-key.signable) interface, and
-* with the [`Decodable#decode`](#api.opgp-key.decodable) method
+* with the [`Decodable#decode`](#api.opgp-key.decodable.decode) method
 from the [`Decodable`](#api.opgp-key.decodable) interface.
 
 Like all other [`SecKey`](#api.opgp-key.sec-key) intances,
@@ -681,14 +684,14 @@ interface SecUniKey extends Lockable, Decodable, Signable {
 Instances of the `Lockable` interface may be locked and unlocked
 with a secret passphrase.
 
-All [`SecKey`](#api.opgp-key.sec-key) instances expose the `Lockable` interface.
-
 This interface exposes [`Lockable#lock`](#api.opgp-key.lockable.lock)
 and [`Lockable#unlock`](#api.opgp-key.lockable.unlock) methods.
 
 More specifically, locking a `Lockable` instance is simply encrypting it
 with a secret passphrase, while unlocking a locked `Lockable` instance
 is decrypting it with the passphrase that was used to lock it.
+
+All [`SecKey`](#api.opgp-key.sec-key) instances are `Lockable` instances.
 
 This functionality is provided by
 [openpgp](https://openpgpjs.org/openpgpjs/doc/module-openpgp.html)
@@ -753,6 +756,91 @@ and exposes the [`SecCodeKey`](#api.opgp-key.sec-code-key) interface
 * [`RootUniKey`](api.opgp-key.root-uni-key) interface
 that represents primary universal keys
 and exposes the [`SecUniKey`](#api.opgp-key.sec-uni-key) interface
+
+Additionally, all `RootKey` instances expose
+the [`Belongings`](#api.opgp-key.belongings) interface, with
+* an [`Immutable.List`](https://facebook.github.io/immutable-js/)
+of [`SecKey`](#api.opgp-key.sec-key) subkey instances,
+* an [`Immutable.List`](https://facebook.github.io/immutable-js/)
+of user id strings.
+
+### syntax
+```typescript
+type RootKey = RootAuthKey | RootCodeKey | RootUniKey
+```
+
+##  <a name="api.opgp-key.belongings"></a> interface `Belongings`
+### description
+The `Belongings` interface exposes two immutable properties:
+* an [`Immutable.List`](https://facebook.github.io/immutable-js/)
+of [`SecKey`](#api.opgp-key.sec-key) subkey instances,
+* an [`Immutable.List`](https://facebook.github.io/immutable-js/)
+of user id strings.
+
+All [`RootKey`](#api.opgp-key.root-key) instances
+expose the above `Belongings` properties.
+
+### syntax
+```typescript
+interface Belongings {
+  keys: FList<SecKey>
+  userids: FList<string>
+}
+```
+
+##  <a name="api.opgp-key.root-auth-key"></a> type alias `RootAuthKey`
+### description
+The `RootAuthKey` interface represents a primary key
+that is itself a secret authentication key for signing texts.
+
+More specifically, the `RootAuthKey` interface exposes both
+* the [`SecAuthKey`](#api.opgp-key.sec-auth-key) interface
+* the [`Belongings`](#api.opgp-key.belongings) interface,
+with an [`Immutable.List`](https://facebook.github.io/immutable-js/)
+of [`SecKey`](#api.opgp-key.sec-key) subkey instances,
+and an [`Immutable.List`](https://facebook.github.io/immutable-js/)
+of user id strings.
+
+### syntax
+```typescript
+interface RootAuthKey extends SecAuthKey, Belongings {}
+```
+
+##  <a name="api.opgp-key.root-code-key"></a> type alias `RootCodeKey`
+### description
+The `RootCodeKey` interface represents a primary key
+that is itself a secret authentication key for signing texts.
+
+More specifically, the `RootCodeKey` interface exposes both
+* the [`SecCodeKey`](#api.opgp-key.sec-code-key) interface
+* the [`Belongings`](#api.opgp-key.belongings) interface,
+with an [`Immutable.List`](https://facebook.github.io/immutable-js/)
+of [`SecKey`](#api.opgp-key.sec-key) subkey instances,
+and an [`Immutable.List`](https://facebook.github.io/immutable-js/)
+of user id strings.
+
+### syntax
+```typescript
+interface RootCodeKey extends SecCodeKey, Belongings {}
+```
+
+##  <a name="api.opgp-key.root-auth-key"></a> type alias `RootUniKey`
+### description
+The `RootUniKey` interface represents a primary key
+that is itself a secret authentication key for signing texts.
+
+More specifically, the `RootUniKey` interface exposes both
+* the [`SecUniKey`](#api.opgp-key.sec-uni-key) interface
+* the [`Belongings`](#api.opgp-key.belongings) interface,
+with an [`Immutable.List`](https://facebook.github.io/immutable-js/)
+of [`SecKey`](#api.opgp-key.sec-key) subkey instances,
+and an [`Immutable.List`](https://facebook.github.io/immutable-js/)
+of user id strings.
+
+### syntax
+```typescript
+interface RootUniKey extends SecUniKey, Belongings {}
+```
 
 ### errors
 flow | type | message | data
