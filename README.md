@@ -35,6 +35,62 @@ expose the main cryptographic methods to process `string` text:
 * sign (authenticate)
 * verify (authenticity)
 
+## example
+```typescript
+import Promise = require('bluebird')
+import { Map as FMap } from 'immutable'
+import getOpgpProxy, { OpgpProxy, OpgpKeyring, OpgpKey, SecKey } from '../src'
+
+const proxy = getOpgpProxy() // spawn OpgpProxy with default config
+
+const secret = 'very secret information'
+const passphrase = 'cryptographically very strong secret passphrase'
+
+// locked signing and decoding keys
+const armor = '-----BEGIN PGP PUBLIC KEY BLOCK... END PGP PUBLIC KEY BLOCK-----'
+let keys = proxy
+.then(proxy => proxy.getKeysFromArmor(armor))
+
+// first unlock private keys
+// assuming for demo's sake that all keys are locked with the same passphrase
+const unlocked = keys
+.then(keys => keys.map
+    .filter(key => isSecKey(key))
+    .map((keys: SecKey) => keys.unlock(secret)))
+.then(wrapped => unwrap(wrapped))
+
+// add unlocked keys to keyring
+keys = Promise.join(proxy, keys, unlocked)
+.spread((proxy, keys, unlocked) =>
+  proxy.getKeysFromMap(keys.merge(unlocked)))
+
+// now encode and sign, then verify signature and decode
+const cipher = keys
+.then(keys => keys.encode(secret)) // result: armored string
+
+Promise.join(keys, cipher)
+.spread(keys, cipher) => keys.decode(armor)) // result: very secret information
+
+/**
+ * TODO replace with a more efficient implementation
+ * @param {Immutable.Map<K,Promise<V>>}
+ * @return {Promise<Map<K,V>>}
+ * @generic K type of Map keys
+ * @generic V type of Map values
+ */
+function unwrap <K,V>(wrapped: FMap<K,Promise<V>>) {
+	return wrapped.reduce((unwrapped, p, k) =>
+    Promise.join(unwrapped, p)
+    .spread((unwrapped, p) => unwrapped.set(k, p)),
+  Promise.resolve(<FMap<K,V>>FMap()))
+}
+
+function isSecKey (val: any): boolean {
+  return !!val
+  && ((typeof val.decode === 'function') || (typeof val.sign === 'function'))
+}
+```
+
 ## <a name="api.opgp-proxy-module"></a> module `opgp-proxy`
 ### description
 exports a default [`OpgpProxyFactory`](#api.opgp-proxy-factory).
@@ -199,7 +255,7 @@ additionally exposes the following methods:
 * [verify](#api.opgp-keyring.verify)
 
 The corresponding [`Immutable.Map`](https://facebook.github.io/immutable-js/)
-is exposed as a `OpgpProxy.keys`] property.
+is exposed as a `OpgpProxy.map`] property.
 
 ### syntax
 ```typescript
@@ -208,7 +264,7 @@ interface OpgpKeyring extends Map<string,OpgpKey> {
   decode (src: string, opts?: DecodeOpts): Promise<string>
   sign (src: string, opts?: SignOpts): Promise<string>
   verify (src: string, opts?: VerifyOpts): Promise<string>
-  keys: Immutable.Map<string, OpgpKey>
+  map: Immutable.Map<string, OpgpKey>
 }
 ```
 
@@ -221,7 +277,7 @@ By default, first encode the given `src` text
 with all public encryption [`OpgpKey`](#api.opgp-key) instances
 in this [`OpgpKeyring`](#api.opgp-keyring) instance.
 
-If any private signing [`OpgpKey`](#api.opgp-key) instances
+If any unlocked private signing [`OpgpKey`](#api.opgp-key) instances
 are bundled in this [`OpgpKeyring`](#api.opgp-keyring) instance,
 then the encoded text is additionally authenticated
 with these keys. Typically, only one signing key is necessary.
@@ -278,8 +334,8 @@ flow | type | message | data | reason
 async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
 async|`Error`|invalid reference|N/A|one or more `OpgpKey.hash` reference strings in `opts.keys.encode` or `opts.keys.sign` do not match any key in this `OpgpKeyring`
 async|`Error`|encode error|N/A|this OpgpKeyring does not contain any public encoding OpgpKey instances
-async|`Error`|sign error|N/A|`opts.strict` is true and this OpgpKeyring does not contain any private signing OpgpKey instances
-async|`OpgpError`|invalid key: ${data}|`Array<string>` `OpgpKey.hash` strings of invalid `OpgpKey` instances|one or more `OpgpKey` instances in this `OpgpKeyring` are either locked, stale or unknown
+async|`Error`|sign error|N/A|`opts.strict` is true and this OpgpKeyring does not contain any unlocked private signing OpgpKey instances
+async|`OpgpError`|invalid key: ${data}|`Array<string>` `OpgpKey.hash` strings of invalid `OpgpKey` instances|one or more required `OpgpKey` instances in this `OpgpKeyring` are either locked, stale or unknown
 
 ##  <a name="api.opgp-keyring.decode"></a> method `OpgpKeyring#decode`
 ### description
@@ -297,7 +353,7 @@ or to a subset defined by a list of `OpgpKey.hash` reference strings
 in `opts.keys.verify`.
 
 If and only if authenticity is successfully verified,
-decode the given `src` string with the private encryption
+decode the given `src` string with the unlocked private encryption
 [`OpgpKey`](#api.opgp-key) instance
 in this [`OpgpKeyring`](#api.opgp-keyring) instance,
 or with that referenced by a `OpgpKey.hash` reference string
@@ -344,12 +400,12 @@ async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wr
 async|`Error`|invalid reference|N/A|one or more `OpgpKey.hash` reference strings in `opts.keys.decode` or `opts.keys.verify` do not match any key in this `OpgpKeyring`
 async|`Error`|unknkown cipher|N/A|cipher not supported, or no cipher, or unknown cipher format
 async|`OpgpError`|invalid key: ${data}|`Array<string>` `OpgpKey.hash` strings of invalid `OpgpKey` instances|one or more `OpgpKey` instances in this `OpgpKeyring` are either locked, stale or unknown
-async|`OpgpError`|decode error: ${data}|`Array<string>` openpgp id strings of all required private decryption keys|none of the required private decryption keys were found in this OpgpKeyring or in `opts.keys.decode`
+async|`OpgpError`|decode error: ${data}|`Array<string>` openpgp id strings of all required private decryption keys|none of the required private decryption keys were found or were unlocked in this OpgpKeyring or in `opts.keys.decode`
 async|`OpgpError`|verify error: ${data}|`Array<string>` openpgp id strings of all keys for which authentication fails|authenticity verification fails with one or more `OpgpKey` instances in this `OpgpKeyring`, or `opts.strict` is true and one or more required keys were not found
 
 ##  <a name="api.opgp-keyring.sign"></a> method `OpgpKeyring#sign`
 ### description
-Authenticate the `src` text with the private signing
+Authenticate the `src` text with the unlocked private signing
 [`OpgpKey`](#api.opgp-key) instances
 bundled in this [`OpgpKeyring`](#api.opgp-keyring) instance.
 Typically, only one signing key is necessary.
@@ -359,7 +415,8 @@ to a subset of the private signing [`OpgpKey`](#api.opgp-key) instances
 by providing a corresponding list of `OpgpKey.hash` reference strings
 in `opts.keys.sign`.
 
-At least one public encoding key and one private signing key must be included.
+At least one public encoding key and one unlocked private signing key
+must be included.
 
 ### syntax
 ```typescript
@@ -383,8 +440,8 @@ flow | type | message | data | reason
 -----|------|---------|------|-------
 async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
 async|`Error`|invalid reference|N/A|one or more `OpgpKey.hash` reference strings in `opts.keys.sign` do not match any key in this `OpgpKeyring`
-async|`Error`|sign error|N/A|this OpgpKeyring does not contain any private signing OpgpKey instances
-async|`OpgpError`|invalid key: ${data}|`Array<string>` `OpgpKey.hash` strings of invalid `OpgpKey` instances|one or more `OpgpKey` instances in this `OpgpKeyring` are either locked, stale or unknown
+async|`Error`|sign error|N/A|this OpgpKeyring does not contain any unlocked private signing OpgpKey instances
+async|`OpgpError`|invalid key: ${data}|`Array<string>` `OpgpKey.hash` strings of invalid `OpgpKey` instances|one or more required `OpgpKey` instances in this `OpgpKeyring` are either locked, stale or unknown
 
 ##  <a name="api.opgp-keyring.verify"></a> method `OpgpKeyring#verify`
 ### description
@@ -432,7 +489,7 @@ flow | type | message | data
 async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
 async|`Error`|invalid reference|N/A|one or more `OpgpKey.hash` reference strings in `opts.keys.decode` or `opts.keys.verify` do not match any key in this `OpgpKeyring`
 async|`OpgpError`|invalid key: ${data}|`Array<string>` `OpgpKey.hash` strings of invalid `OpgpKey` instances|one or more `OpgpKey` instances in this `OpgpKeyring` are either locked, stale or unknown
-async|`OpgpError`|verify error: ${data}|`Array<string>` openpgp id strings of all keys for which authentication fails|authenticity verification fails with one or more `OpgpKey` instances in this `OpgpKeyring`, or `opts.strict` is true and one or more required keys were not found
+async|`OpgpError`|verify error: ${data}|`Array<string>` openpgp id strings of all keys for which authentication fails|authenticity verification fails with one or more `OpgpKey` instances in this `OpgpKeyring`, or `opts.strict` is true and one or more required keys were not found,  or the string is not authenticated with a supported format
 
 ##  <a name="api.opgp-key"></a> type alias `OpgpKey`
 ### description
@@ -820,7 +877,7 @@ of user id strings.
 interface RootCodeKey extends SecCodeKey, Belongings {}
 ```
 
-##  <a name="api.opgp-key.root-auth-key"></a> interface `RootUniKey`
+##  <a name="api.opgp-key.root-uni-key"></a> interface `RootUniKey`
 ### description
 The `RootUniKey` interface represents a primary key
 that is itself a secret authentication key for signing texts.
@@ -1034,7 +1091,7 @@ flow | type | message | data
 -----|------|---------|---------
 async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
 async|`Error`|invalid key|N/A|this `PubAuthKey` or `PubUniKey` is either stale or unknown
-async|`Error`|verify error|N/A|the `src` string was not signed with this `OpgpKey`
+async|`Error`|verify error|N/A|the `src` string was not signed with this `OpgpKey`, or the string is not authenticated with a supported format
 
 ##  <a name="api.opgp-key.encodable.encode"></a> method `Encodable#encode`
 ### description
@@ -1062,7 +1119,64 @@ result of encoding the `src` string with this instance
 flow | type | message | data
 -----|------|---------|---------
 async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
-async|`Error`|invalid key|N/A|this `PubAuthKey` or `PubUniKey` is either stale or unknown
+async|`Error`|invalid key|N/A|this `PubCodeKey` or `PubUniKey` is either stale or unknown
+
+##  <a name="api.opgp-key.signable.sign"></a> method `Signable#sign`
+### description
+sign a `src` string
+with this instance of [`SecAuthKey`](#api.opgp-key.sec-auth-key)
+or [`SecUniKey`](#api.opgp-key.sec-uni-key).
+
+### syntax
+```typescript
+interface Signable {
+	sign (src: string, opts?: SignOpts): Promise<string>
+}
+```
+
+#### param `src: string`
+the string to sign
+
+#### param `opts?: SignOpts`
+ignored in current implementation
+
+#### return `Promise<string>`
+signed armored `src` string
+
+### errors
+flow | type | message | data
+-----|------|---------|---------
+async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
+async|`Error`|invalid key|N/A|this `SecAuthKey` or `SecbUniKey` is either locked, stale or unknown
+
+##  <a name="api.opgp-key.decodable.decode"></a> method `Decodable#decode`
+### description
+Decode an armored `src` string with this instance
+of [`SecCodehKey`](#api.opgp-key.pub-code-key)
+or [`SecUniKey`](#api.opgp-key.pub-uni-key).
+
+### syntax
+```typescript
+interface Decodable {
+	decode (src: string, opts?: DecodeOpts): Promise<string>
+}
+```
+
+#### param `src: string`
+the armored encoded string to decode
+
+#### param `opts?: DecodeOpts`
+ignored in current implementation
+
+#### return `Promise<string>`
+result of decoding the `src` string with this instance
+
+### errors
+flow | type | message | data
+-----|------|---------|---------
+async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
+async|`Error`|invalid key|N/A|this `PubAuthKey` or `PubUniKey` is either locked, stale or unknown
+async|`Error`|unknkown cipher|N/A|cipher not supported, or no cipher, or unknown cipher format
 
 # <a name="license"></a> LICENSE
 Copyright 2016 Stéphane M. Catala
