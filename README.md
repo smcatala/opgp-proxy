@@ -238,7 +238,7 @@ additionally exposes the following methods:
 * [unlock](#api.opgp-keyring.unlock)
 
 The corresponding [`Immutable.Map`](https://facebook.github.io/immutable-js/)
-is exposed as a `OpgpProxy.map`] property.
+is exposed as a `OpgpProxy.asMap` property.
 
 ### syntax
 ```typescript
