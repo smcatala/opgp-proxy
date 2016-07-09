@@ -52,7 +52,7 @@ const keys = proxy
 
 // assume for demo's sake that all keys are locked with the same passphrase
 const passphrases = keys
-.then(keys => keys.map
+.then(keys => keys.asMap
   .filter(key => isLocked(key))
   .map(key => passphrase))
 
@@ -249,7 +249,7 @@ interface OpgpKeyring extends Map<string,OpgpKey> {
   verify (src: string, opts?: VerifyOpts): Promise<string>
   lock (passphrases: Iterable<string,string>, opts?: LockOpts): Promise<OpgpKeyring>
   unlock (passphrases: Iterable<string,string>, opts?: LockOpts): Promise<OpgpKeyring>
-  map: Immutable.Map<string, OpgpKey>
+  asMap: Immutable.Map<string, OpgpKey>
 }
 ```
 
@@ -384,7 +384,7 @@ flow | type | message | data | reason
 async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
 async|`Error`|invalid reference|N/A|one or more `OpgpKey.hash` reference strings in `opts.keys.decode` or `opts.keys.verify` do not match any key in this `OpgpKeyring`
 async|`Error`|unknkown cipher|N/A|cipher not supported, or no cipher, or unknown cipher format
-async|`OpgpError`|invalid key: ${data}|`Array<string>` `OpgpKey.hash` strings of invalid `OpgpKey` instances|one or more `OpgpKey` instances in this `OpgpKeyring` are either locked, stale or unknown
+async|`OpgpError`|invalid key: ${data}|`Array<string>` `OpgpKey.hash` strings of invalid `OpgpKey` instances|one or more required `OpgpKey` instances in this `OpgpKeyring` are either locked, stale or unknown
 async|`OpgpError`|decode error: ${data}|`Array<string>` openpgp id strings of all required private decryption keys|none of the required private decryption keys were found or were unlocked in this OpgpKeyring or in `opts.keys.decode`
 async|`OpgpError`|verify error: ${data}|`Array<string>` openpgp id strings of all keys for which authentication fails|authenticity verification fails with one or more `OpgpKey` instances in this `OpgpKeyring`, or `opts.strict` is true and one or more required keys were not found
 
@@ -475,6 +475,136 @@ async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wr
 async|`Error`|invalid reference|N/A|one or more `OpgpKey.hash` reference strings in `opts.keys.decode` or `opts.keys.verify` do not match any key in this `OpgpKeyring`
 async|`OpgpError`|invalid key: ${data}|`Array<string>` `OpgpKey.hash` strings of invalid `OpgpKey` instances|one or more `OpgpKey` instances in this `OpgpKeyring` are either locked, stale or unknown
 async|`OpgpError`|verify error: ${data}|`Array<string>` openpgp id strings of all keys for which authentication fails|authenticity verification fails with one or more `OpgpKey` instances in this `OpgpKeyring`, or `opts.strict` is true and one or more required keys were not found,  or the string is not authenticated with a supported format
+
+##  <a name="api.opgp-keyring.lock"></a> method `OpgpKeyring#lock`
+### description
+Lock all [`SecKey`](#api.opgp-key.sec-key) instances
+referenced by their [`Eposable#hash`](#api.opgp-key.exposable) string
+in this [`OpgpKeyring`](#api.opgp-keyring)
+by encoding them with corresponding secret passphrases,
+or with a common secret passphrase.
+* the secret passphrases may be either supplied as an `Iterable`
+of [`Eposable#hash`](#api.opgp-key.exposable) string
+to secret passphrase string,
+* or, a single secret passphrase string may supplied instead of an `Iterable`
+in which case all [`SecKey`](#api.opgp-key.sec-key) instances
+in this [`OpgpKeyring`](#api.opgp-keyring)
+will be locked with that passphrase.
+
+Since this method mutates the state
+of the underlying [openpgp](https://openpgpjs.org)
+keys in a security-critical way,
+it returns a new immutable [`OpgpKeyring`](#api.opgp-keyring) instance
+with new immutable locked [`SecKey`](#api.opgp-key.sec-key) instances
+of the same type.
+
+This method by default immediately invalidates
+all [`SecKey`](#api.opgp-key.sec-key) instances it locks,
+which then become permanently stale.
+This behavior can be disabled by setting the `opts.invalidate` option to false.
+
+### syntax
+```typescript
+interface Lockable {
+  // ...
+	lock (secrets: string|Iterable<string,string>, opts?: LockOpts): Promise<this>
+}
+```
+
+#### param `secrets: string|Iterable<string,string>`
+should be a or a map of cryptographically secure random string
+with which to encode the corresponding
+[`SecKey`](#api.opgp-key.sec-key) instances.
+
+#### param `opts?: LockOpts`
+```typescript
+interface LockOpts {
+  invalidate: boolean // = true
+}
+```
+* `invalidate: boolean`
+true by default,
+false disables automatic invalidation
+of this [`SecKey`](#api.opgp-key.sec-key) instance.
+
+#### return `Promise<string>`
+new immutable [`OpgpKeyring`](#api.opgp-keyring) instance
+with new immutable locked [`SecKey`](#api.opgp-key.sec-key) instances
+of the same type, each encoded with the corresponding `secret` passphrase.
+
+### errors
+flow | type | message | data
+-----|------|---------|---------
+async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
+async|`Error`|invalid reference|N/A|one or more `OpgpKey.hash` reference strings in `secrets` do not match any key in this `OpgpKeyring`
+async|`OpgpError`|invalid key: ${data}|`Array<string>` `OpgpKey.hash` strings of invalid `OpgpKey` instances|one or more `OpgpKey` instances in this `OpgpKeyring` are either stale or unknown
+async|`Error`|lock error|N/A|one or more referenced `SecKey` intances are already locked, i.e. `this.isLocked === true`, and must first be unlocked
+
+##  <a name="api.opgp-keyring.unlock"></a> method `OpgpKeyring#unlock`
+### description
+Unlock all [`SecKey`](#api.opgp-key.sec-key) instances
+referenced by their [`Eposable#hash`](#api.opgp-key.exposable) string
+in this [`OpgpKeyring`](#api.opgp-keyring)
+by decoding them with corresponding secret passphrases,
+or with a common secret passphrase.
+* the secret passphrases may be either supplied as an `Iterable`
+of [`Eposable#hash`](#api.opgp-key.exposable) string
+to secret passphrase string,
+* or, a single secret passphrase string may supplied instead of an `Iterable`
+in which case all [`SecKey`](#api.opgp-key.sec-key) instances
+in this [`OpgpKeyring`](#api.opgp-keyring)
+will be unlocked with that passphrase.
+
+Since this method mutates the state
+of the underlying [openpgp](https://openpgpjs.org)
+keys in a security-critical way,
+it returns a new immutable [`OpgpKeyring`](#api.opgp-keyring) instance
+with new immutable locked [`SecKey`](#api.opgp-key.sec-key) instances
+of the same type.
+
+When referenced [`SecKey`](#api.opgp-key.sec-key) instances are unlocked,
+they remain unlocked for a given length of time,
+as defined by the `opts.autolock` option,
+after which the instances automatically become stale.
+The `opts.autolock` option defaults to the default value
+of the [`OpgpProxy`](#api.opgp-proxy).
+
+### syntax
+```typescript
+interface Lockable {
+  // ...
+	unlock (secrets: string|Iterable<string,string>, opts?: UnlockOpts):
+  Promise<this>
+}
+```
+
+#### param `secret: string|Iterable<string,string>`
+the secret passphrase or map of secret passphrases with which to decode
+referenced [`SecKey`](#api.opgp-key.sec-key) instances.
+
+#### param `opts?: UnlockOpts`
+```typescript
+interface UnlockOpts {
+  autolock: number // = OpgpProxy.config.autolock
+}
+```
+* `autolock: number`
+same default value as that of the [`OpgpProxy`](#api.opgp-proxy),
+delay after which this [`SecKey`](#api.opgp-key.sec-key) instance
+is invalidated, i.e. becomes stale, after unlocking.
+
+#### return `Promise<string>`
+new immutable [`SecKey`](#api.opgp-key.sec-key) instance
+of the same type as this [`SecKey`](#api.opgp-key.sec-key) instance
+decoded with the `secret` passphrase.
+
+### errors
+flow | type | message | data
+-----|------|---------|---------
+async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
+async|`Error`|invalid reference|N/A|one or more `OpgpKey.hash` reference strings in `secrets` do not match any key in this `OpgpKeyring`
+async|`OpgpError`|invalid key: ${data}|`Array<string>` `OpgpKey.hash` strings of invalid `OpgpKey` instances|one or more `OpgpKey` instances in this `OpgpKeyring` are either stale or unknown
+async|`Error`|unlock error|N/A|one or more referenced `SecKey` intances are already unlocked, i.e. `this.isLocked === false`, or were not encoded with the given `secret` passphrase
 
 ##  <a name="api.opgp-key"></a> type alias `OpgpKey`
 ### description
@@ -955,8 +1085,7 @@ key in a security-critical way,
 it returns a new immutable [`SecKey`](#api.opgp-key.sec-key) instance
 of the same type.
 
-The [`Lockable#lock`](#api.opgp-key.lockable.lock) method
-by default immediately invalidates
+This method by default immediately invalidates
 its [`SecKey`](#api.opgp-key.sec-key) instance,
 which then becomes permanently stale.
 This behavior can be disabled by setting the `opts.invalidate` option to false.
