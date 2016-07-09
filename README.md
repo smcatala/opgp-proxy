@@ -38,8 +38,7 @@ expose the main cryptographic methods to process `string` text:
 ## example
 ```typescript
 import Promise = require('bluebird')
-import { Map as FMap } from 'immutable'
-import getOpgpProxy, { OpgpProxy, OpgpKeyring, OpgpKey, SecKey } from '../src'
+import getOpgpProxy from '../src'
 
 const proxy = getOpgpProxy() // spawn OpgpProxy with default config
 
@@ -48,46 +47,28 @@ const passphrase = 'cryptographically very strong secret passphrase'
 
 // locked signing and decoding keys
 const armor = '-----BEGIN PGP PUBLIC KEY BLOCK... END PGP PUBLIC KEY BLOCK-----'
-let keys = proxy
+const keys = proxy
 .then(proxy => proxy.getKeysFromArmor(armor))
 
-// first unlock private keys
-// assuming for demo's sake that all keys are locked with the same passphrase
-const unlocked = keys
+// assume for demo's sake that all keys are locked with the same passphrase
+const passphrases = keys
 .then(keys => keys.map
-    .filter(key => isSecKey(key))
-    .map((keys: SecKey) => keys.unlock(secret)))
-.then(wrapped => unwrap(wrapped))
+  .filter(key => isLocked(key))
+  .map(key => passphrase))
 
-// add unlocked keys to keyring
-keys = Promise.join(proxy, keys, unlocked)
-.spread((proxy, keys, unlocked) =>
-  proxy.getKeysFromMap(keys.merge(unlocked)))
+// first unlock private keys
+const unlocked = keys
+.then(keys => keys.unlock(passphrases)
 
 // now encode and sign, then verify signature and decode
-const cipher = keys
+const cipher = unlocked
 .then(keys => keys.encode(secret)) // result: armored string
 
-Promise.join(keys, cipher)
-.spread(keys, cipher) => keys.decode(armor)) // result: very secret information
+Promise.join(unlocked, cipher)
+.spread((keys, cipher) => keys.decode(armor)) // result: very secret information
 
-/**
- * TODO replace with a more efficient implementation
- * @param {Immutable.Map<K,Promise<V>>}
- * @return {Promise<Map<K,V>>}
- * @generic K type of Map keys
- * @generic V type of Map values
- */
-function unwrap <K,V>(wrapped: FMap<K,Promise<V>>) {
-	return wrapped.reduce((unwrapped, p, k) =>
-    Promise.join(unwrapped, p)
-    .spread((unwrapped, p) => unwrapped.set(k, p)),
-  Promise.resolve(<FMap<K,V>>FMap()))
-}
-
-function isSecKey (val: any): boolean {
-  return !!val
-  && ((typeof val.decode === 'function') || (typeof val.sign === 'function'))
+function isLocked (val: any): boolean {
+  return !!val && (typeof val.isLocked === 'boolean') && val.isLocked
 }
 ```
 
@@ -253,6 +234,8 @@ additionally exposes the following methods:
 * [decode](#api.opgp-keyring.decode)
 * [sign](#api.opgp-keyring.sign)
 * [verify](#api.opgp-keyring.verify)
+* [lock](#api.opgp-keyring.lock)
+* [unlock](#api.opgp-keyring.unlock)
 
 The corresponding [`Immutable.Map`](https://facebook.github.io/immutable-js/)
 is exposed as a `OpgpProxy.map`] property.
@@ -264,6 +247,8 @@ interface OpgpKeyring extends Map<string,OpgpKey> {
   decode (src: string, opts?: DecodeOpts): Promise<string>
   sign (src: string, opts?: SignOpts): Promise<string>
   verify (src: string, opts?: VerifyOpts): Promise<string>
+  lock (passphrases: Iterable<string,string>, opts?: LockOpts): Promise<OpgpKeyring>
+  unlock (passphrases: Iterable<string,string>, opts?: LockOpts): Promise<OpgpKeyring>
   map: Immutable.Map<string, OpgpKey>
 }
 ```
