@@ -28,8 +28,11 @@ import {
   fromArmor,
   fromMap,
   OpgpKeyring,
-  OpgpKey
+  OpgpKey,
+  SecKey
 } from './opgpkeyring'
+
+export { OpgpKeyring, OpgpKey, SecKey }
 
 export interface OpgpProxyFactory {
   (config?: OpgpProxyConfig): Promise<OpgpProxy>

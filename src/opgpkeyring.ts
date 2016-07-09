@@ -22,11 +22,11 @@ import {
   BehaviorSubject,
   Observer
 } from '@reactivex/rxjs'
-import { Map as FMap } from 'immutable'
+import { Map as FMap, Iterable } from 'immutable'
 import { fixSubclass } from './lib/utils'
-import { getOpgpKey, OpgpKey } from './opgpkey'
+import { getOpgpKey, OpgpKey, SecKey, LockOpts, UnlockOpts } from './opgpkey'
 
-export { OpgpKey }
+export { OpgpKey, SecKey, Iterable }
 
 /**
  * @public
@@ -107,11 +107,25 @@ export interface OpgpKeyring {
   verify (src: string, opts?: VerifyOpts): Promise<string>
   /**
    * @public
+   * @param  {string|Iterable<string,string>} secrets
+   * @param  {LockOpts} opts?
+   * @returns {Promise<this>}
+   */
+  lock (secrets: string|Iterable<string,string>, opts?: LockOpts): Promise<this>
+  /**
+   * @public
+   * @param  {string|Iterable<string,string>} secrets
+   * @param  {LockOpts} opts?
+   * @returns {Promise<this>}
+   */
+  unlock (secrets: string|Iterable<string,string>, opts?: UnlockOpts): Promise<this>
+  /**
+   * @public
    * [Immutable](https://facebook.github.io/immutable-js/).Map
    * of primary-key hash {string} to {OpgpKey} instance
    * of the keys in this {OpgpKeyring}.
    */
-  keys: FMap<string, OpgpKey>
+  asMap: FMap<string, OpgpKey>
 }
 
 export interface EncodeOpts {
@@ -264,9 +278,25 @@ implements OpgpKeyring {
 
   /**
    * @public
+   * @see {OpgpKeyring#lock}
+   */
+  lock (secrets: string|Iterable<string,string>, opts?: LockOpts): Promise<this> {
+    return
+  }
+
+  /**
+   * @public
+   * @see {OpgpKeyring#unlock}
+   */
+  unlock (secrets: string|Iterable<string,string>, opts?: UnlockOpts): Promise<this> {
+    return
+  }
+
+  /**
+   * @public
    * @see {OpgpKeyring#keys}
    */
-  keys: FMap<string, OpgpKey>
+  asMap: FMap<string, OpgpKey>
 
   /**
    * @private
@@ -276,7 +306,7 @@ implements OpgpKeyring {
   constructor (spec: OpgpKeyringSpec) {
     // TODO
     Object.defineProperties(this, {
-      keys: { value: FMap(spec.keys), enumerable: true }
+      asMap: { value: FMap(spec.keys), enumerable: true }
     })
   }
 
