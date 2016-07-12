@@ -127,7 +127,7 @@ Both [`OpgpKeyring`](#api.opgp-keyring) and [`OpgpKey`](#api.opgp-key) instances
 are immutable. [`OpgpKey`](#api.opgp-key) instances are additionally ephemeral.
 
 * [`getKeysFromArmor`](#api.opgp-proxy.get-keys-from-armor)
-* [`getKeysFromMap`](#api.opgp-proxy.get-keys-from-map)
+* [`getKeysFromList`](#api.opgp-proxy.get-keys-from-list)
 * [`terminate`](#api.opgp-proxy.terminate)
 * [`OpgpKeyring`](#api.opgp-keyring)
 * [`OpgpKey`](#api.opgp-key)
@@ -137,8 +137,7 @@ are immutable. [`OpgpKey`](#api.opgp-key) instances are additionally ephemeral.
 export interface OpgpProxy {
   getKeysFromArmor (armor: string, opts?: OpgpKeyringOpts): Promise<OpgpKeyring>
 
-  getKeysFromMap (map: Map<string,OpgpKey>|FMap<string,OpgpKey>, opts?: OpgpKeyringOpts):
-  OpgpKeyring
+  getKeysFromList (list: Iterable<OpgpKey>, opts?: OpgpKeyringOpts): OpgpKeyring
 
   terminate (): void
 }
@@ -171,18 +170,16 @@ const keys = proxy.getKeysFromArmor(armor)
 keys.then(keys => /* do something with keys */)
 ```
 
-## <a name="api.opgp-proxy.get-key-from-map"></a> factory method `getKeysFromMap`
+## <a name="api.opgp-proxy.get-key-from-list"></a> factory method `getKeysFromList`
 ### description
-import [`OpgpKey`](#api.opgp-key) instances
-from an armored [openpgp](https://openpgpjs.org/) `string`
+import a list of [`OpgpKey`](#api.opgp-key) instances
 as a new or an existing [`OpgpKeyring`](#api.opgp-keyring) instance.
 
 ### syntax
 ```typescript
 interface OpgpProxy {
   // ...
-  getKeysFromMap (map: Map<string,OpgpKey>|FMap<string,OpgpKey>,
-  opts?: OpgpKeyringOpts): OpgpKeyring
+  getKeysFromList (list: Iterable<OpgpKey>, opts?: OpgpKeyringOpts): OpgpKeyring
 }
 ```
 
@@ -190,13 +187,6 @@ interface OpgpProxy {
 flow | type | message | data | reason
 -----|------|---------|------|-------
 sync|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
-
-### example
-```typescript
-const armor = '-----BEGIN PGP PUBLIC KEY BLOCK... END PGP PUBLIC KEY BLOCK-----'
-const keys = proxy.getKeysFromArmor(armor)
-keys.then(keys => /* do something with keys */)
-```
 
 ## <a name="api.opgp-proxy.terminate"></a> method `terminate`
 ### description
