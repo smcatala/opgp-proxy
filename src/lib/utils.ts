@@ -12,6 +12,7 @@
  * Limitations under the License.
  */
 ;
+import { __assign } from 'tslib'
 /**
  * add all enumerable properties from the prototypes
  * of the {sources} constructors
@@ -26,6 +27,34 @@ export function mixin (target: Function, ...sources: Function[]): any {
 }
 
 /**
+ * custom implementation of Typescript `__extends` helper,
+ * the difference being that the constructor property on the prototype
+ * of the derived class is not enumerable (as with ES6 class).
+ * this is required when applying Object.assign to mixin the prototype
+ * of a subclass onto another prototype, so as not to copy the constructor.
+ * @param  {Function} d derived class (subclass)
+ * @param  {Function} b base class (super)
+ */
+export function __extends (d: Function, b: Function) {
+    for (var p in b) {
+        if (b.hasOwnProperty(p)) {
+            d[p] = b[p]
+        }
+    }
+    function __ () {
+        Object.defineProperty(this, 'constructor', {
+            value: d,
+            enumerable: false,
+            configurable: true,
+            writable: true
+        })
+    }
+    d.prototype = (b === null) ?
+    Object.create(b) : (__.prototype = b.prototype, new (<any> __)());
+}
+
+/**
+ * @deprecated replaced with custom __extends helper (--noEmitHelpers)
  * sets the `enumerable` property of the 'constructor' property
  * of the prototype of the given {ctor} constructor
  * to false:

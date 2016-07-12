@@ -23,7 +23,7 @@ import {
   Observer
 } from '@reactivex/rxjs'
 import { List as FList } from 'immutable'
-import { mixin, fixSubclass } from './lib/utils'
+import { mixin, __extends } from './lib/utils' // --noEmitHelpers
 
 /**
  * @public
@@ -423,8 +423,6 @@ class PubAuthKeyClass extends ExposableKeyClass implements PubAuthKey {
   }
 }
 
-fixSubclass(PubAuthKeyClass)
-
 class PubCodingKeyClass extends ExposableKeyClass implements PubCodeKey {
   /**
    * @public
@@ -437,8 +435,6 @@ class PubCodingKeyClass extends ExposableKeyClass implements PubCodeKey {
     super(spec)
   }
 }
-
-fixSubclass(PubCodingKeyClass)
 
 class PubUniKeyClass extends ExposableKeyClass implements PubUniKey {
   /**
@@ -468,8 +464,6 @@ class PubUniKeyClass extends ExposableKeyClass implements PubUniKey {
 		super(spec)
 	}
 }
-
-fixSubclass(PubUniKeyClass)
 
 mixin (PubUniKeyClass, PubAuthKeyClass, PubCodingKeyClass)
 
@@ -501,8 +495,6 @@ class LockableKeyClass extends ExposableKeyClass implements Lockable {
   }
 }
 
-fixSubclass(LockableKeyClass)
-
 class SecAuthKeyClass extends LockableKeyClass implements SecAuthKey {
   /**
    * @public
@@ -524,8 +516,6 @@ class SecAuthKeyClass extends LockableKeyClass implements SecAuthKey {
 	}
 }
 
-fixSubclass(SecAuthKeyClass)
-
 class SecCodingKeyClass extends LockableKeyClass implements SecCodeKey {
   /**
    * @public
@@ -546,8 +536,6 @@ class SecCodingKeyClass extends LockableKeyClass implements SecCodeKey {
     })
 	}
 }
-
-fixSubclass(SecCodingKeyClass)
 
 class SecUniKeyClass extends LockableKeyClass implements SecUniKey {
   /**
@@ -573,8 +561,6 @@ class SecUniKeyClass extends LockableKeyClass implements SecUniKey {
     })
 	}
 }
-
-fixSubclass(SecUniKeyClass)
 
 mixin(SecUniKeyClass, SecAuthKeyClass, SecCodingKeyClass)
 

@@ -36,7 +36,8 @@
     "@reactivex/rxjs": "^5.0.0-beta.9",
     "bluebird": "^3.4.0",
     "immutable": "^3.8.1",
-    "openpgp": "^2.3.2"
+    "openpgp": "^2.3.2",
+    "tslib": "^1.0.0"
   },
   "devDependencies": {
     "browserify": "^13.0.1",

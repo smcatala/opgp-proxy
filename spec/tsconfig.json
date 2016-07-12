@@ -5,6 +5,7 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "sourceMap": true,
+    "noEmitHelpers": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "removeComments": true,
