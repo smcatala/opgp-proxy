@@ -14,7 +14,7 @@ the proxy ensures that key material is well contained
 and does not leak throughout client code.
 Key ephemerality and immutability further enhance the robustness of the API.
 
-# <a name="api"></a> API v0.0.1 experimental
+# <a name="api"></a> API v1.0.0 experimental
 Typescript compatible.
 
 Note that in its current implementation,
