@@ -40,17 +40,14 @@ export interface OpgpKeyringFromArmor {
   (armor: string, opts?: OpgpKeyringOpts): Promise<OpgpKeyring>
 }
 
-/** TODO expand to accept Iterable<string,OpgpKey>
+/**
  * @public
  * @factory
- * @param  {Map<string,OpgpKey>|Immutable.Map<string,OpgpKey>} map
- * standard ES6 Map or
- * [Immutable](https://facebook.github.io/immutable-js/).Map
- * of `OpgpKey.hash` string to OpgpKey
+ * @param  {Array<OpgpKey>|Iterable<any,OpgpKey>} list of OpgpKey instances
  * @returns {OpgpKeyring}
  */
-export interface OpgpKeyringFromMap {
-  (map: Map<string,OpgpKey>|FMap<string,OpgpKey>, opts?: OpgpKeyringOpts):
+export interface OpgpKeyringFromList {
+  (list: Array<OpgpKey>|Iterable<any,OpgpKey>, opts?: OpgpKeyringOpts):
   OpgpKeyring
 }
 
@@ -239,8 +236,7 @@ implements OpgpKeyring {
    * @static
    * @see {OpgpKeyringFromMap}
    */
-  static fromMap (map: Map<string,OpgpKey>|FMap<string,OpgpKey>,
-  opts?: OpgpKeyringOpts): OpgpKeyring {
+  static fromList (list: Array<OpgpKey>|Iterable<any,OpgpKey>, opts?: OpgpKeyringOpts): OpgpKeyring {
     return
   }
 
@@ -324,4 +320,4 @@ interface OpgpKeyringSpec {
 }
 
 export const fromArmor: OpgpKeyringFromArmor = OpgpKeyringClass.fromArmor
-export const fromMap: OpgpKeyringFromMap = OpgpKeyringClass.fromMap
+export const fromList: OpgpKeyringFromList = OpgpKeyringClass.fromList

@@ -22,11 +22,11 @@ import {
   BehaviorSubject,
   Observer
 } from '@reactivex/rxjs'
-import { Map as FMap } from 'immutable'
+import { Map as FMap, Iterable } from 'immutable'
 const workify = require('webworkify') // no typings
 import {
   fromArmor,
-  fromMap,
+  fromList,
   OpgpKeyring,
   OpgpKey,
   SecKey
@@ -61,13 +61,10 @@ export interface OpgpProxy {
   /**
    * @public
    * @factory
-   * @param  {Map<string,OpgpKey>|Immutable.Map<string,OpgpKey>} map
-   * standard ES6 Map or
-   * [Immutable](https://facebook.github.io/immutable-js/).Map
-   * of `OpgpKey.hash` string to OpgpKey
+   * @param {Array<OpgpKey>|Iterable<any,OpgpKey>} list of OpgpKey instances
    * @returns {OpgpKeyring}
    */
-  getKeysFromMap (map: Map<string,OpgpKey>|FMap<string,OpgpKey>,
+  getKeysFromList (list: Array<OpgpKey>|Iterable<any,OpgpKey>,
   opts?: OpgpKeyringOpts): OpgpKeyring
   /**
    * @public
@@ -97,7 +94,7 @@ class OpgpProxyClass implements OpgpProxy {
    * @public
    * @see {OpgpProxy#getKeysFromMap}
    */
-  getKeysFromMap (map: Map<string,OpgpKey>|FMap<string,OpgpKey>,
+  getKeysFromList (list: Array<OpgpKey>|Iterable<any,OpgpKey>,
   opts?: OpgpKeyringOpts): OpgpKeyring {
     return
   }

@@ -137,7 +137,8 @@ are immutable. [`OpgpKey`](#api.opgp-key) instances are additionally ephemeral.
 export interface OpgpProxy {
   getKeysFromArmor (armor: string, opts?: OpgpKeyringOpts): Promise<OpgpKeyring>
 
-  getKeysFromList (list: Iterable<OpgpKey>, opts?: OpgpKeyringOpts): OpgpKeyring
+  getKeysFromList (list: Array<OpgpKey>|Iterable<any,OpgpKey>,
+  opts?: OpgpKeyringOpts): OpgpKeyring
 
   terminate (): void
 }
@@ -179,7 +180,8 @@ as a new or an existing [`OpgpKeyring`](#api.opgp-keyring) instance.
 ```typescript
 interface OpgpProxy {
   // ...
-  getKeysFromList (list: Iterable<OpgpKey>, opts?: OpgpKeyringOpts): OpgpKeyring
+  getKeysFromList (list: Array<OpgpKey>|Iterable<any,OpgpKey>,
+  opts?: OpgpKeyringOpts): OpgpKeyring
 }
 ```
 
