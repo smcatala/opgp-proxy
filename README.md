@@ -461,8 +461,8 @@ interface VerifyOpts {
 ```
 
 ### errors
-flow | type | message | data
------|------|---------|---------
+flow | type | message | data | reason
+-----|------|---------|------|-------
 async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
 async|`Error`|invalid reference|N/A|one or more `OpgpKey.hash` reference strings in `opts.keys.decode` or `opts.keys.verify` do not match any key in this `OpgpKeyring`
 async|`OpgpError`|invalid key: ${data}|`Array<string>` `OpgpKey.hash` strings of invalid `OpgpKey` instances|one or more `OpgpKey` instances in this `OpgpKeyring` are either locked, stale or unknown
@@ -525,8 +525,8 @@ with new immutable locked [`SecKey`](#api.opgp-key.sec-key) instances
 of the same type, each encoded with the corresponding `secret` passphrase.
 
 ### errors
-flow | type | message | data
------|------|---------|---------
+flow | type | message | data | reason
+-----|------|---------|------|-------
 async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
 async|`Error`|invalid reference|N/A|one or more `OpgpKey.hash` reference strings in `secrets` do not match any key in this `OpgpKeyring`
 async|`OpgpError`|invalid key: ${data}|`Array<string>` `OpgpKey.hash` strings of invalid `OpgpKey` instances|one or more `OpgpKey` instances in this `OpgpKeyring` are either stale or unknown
@@ -591,8 +591,8 @@ of the same type as this [`SecKey`](#api.opgp-key.sec-key) instance
 decoded with the `secret` passphrase.
 
 ### errors
-flow | type | message | data
------|------|---------|---------
+flow | type | message | data | reason
+-----|------|---------|------|-------
 async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
 async|`Error`|invalid reference|N/A|one or more `OpgpKey.hash` reference strings in `secrets` do not match any key in this `OpgpKeyring`
 async|`OpgpError`|invalid key: ${data}|`Array<string>` `OpgpKey.hash` strings of invalid `OpgpKey` instances|one or more `OpgpKey` instances in this `OpgpKeyring` are either stale or unknown
@@ -1111,8 +1111,8 @@ of the same type as this [`SecKey`](#api.opgp-key.sec-key) instance
 encoded with the `secret` passphrase.
 
 ### errors
-flow | type | message | data
------|------|---------|---------
+flow | type | message | data | reason
+-----|------|---------|------|-------
 async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
 async|`Error`|invalid key|N/A|this `SecKey` is either stale or unknown
 async|`Error`|lock error|N/A|this `SecKey` is already locked, i.e. `this.isLocked === true`, and must first be unlocked
@@ -1164,8 +1164,8 @@ of the same type as this [`SecKey`](#api.opgp-key.sec-key) instance
 decoded with the `secret` passphrase.
 
 ### errors
-flow | type | message | data
------|------|---------|---------
+flow | type | message | data | reason
+-----|------|---------|------|-------
 async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
 async|`Error`|invalid key|N/A|this `SecKey` is either stale or unknown
 async|`Error`|unlock error|N/A|this `SecKey` is already unlocked or was not encoded with the given `secret` passphrase
@@ -1193,8 +1193,8 @@ ignored in current implementation
 unsigned text extracted from `src`
 
 ### errors
-flow | type | message | data
------|------|---------|---------
+flow | type | message | data | reason
+-----|------|---------|------|-------
 async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
 async|`Error`|invalid key|N/A|this `PubAuthKey` or `PubUniKey` is either stale or unknown
 async|`Error`|verify error|N/A|the `src` string was not signed with this `OpgpKey`, or the string is not authenticated with a supported format
@@ -1222,8 +1222,8 @@ ignored in current implementation
 result of encoding the `src` string with this instance
 
 ### errors
-flow | type | message | data
------|------|---------|---------
+flow | type | message | data | reason
+-----|------|---------|------|-------
 async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
 async|`Error`|invalid key|N/A|this `PubCodeKey` or `PubUniKey` is either stale or unknown
 
@@ -1250,8 +1250,8 @@ ignored in current implementation
 signed armored `src` string
 
 ### errors
-flow | type | message | data
------|------|---------|---------
+flow | type | message | data | reason
+-----|------|---------|------|-------
 async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
 async|`Error`|invalid key|N/A|this `SecAuthKey` or `SecbUniKey` is either locked, stale or unknown
 
@@ -1278,8 +1278,8 @@ ignored in current implementation
 result of decoding the `src` string with this instance
 
 ### errors
-flow | type | message | data
------|------|---------|---------
+flow | type | message | data | reason
+-----|------|---------|------|-------
 async|`Error`|invalid argument|N/A|one or more argument invariants fail, e.g. wrong argument type
 async|`Error`|invalid key|N/A|this `PubAuthKey` or `PubUniKey` is either locked, stale or unknown
 async|`Error`|unknkown cipher|N/A|cipher not supported, or no cipher, or unknown cipher format
