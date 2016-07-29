@@ -4,6 +4,14 @@
     "target": "es5",
     "module": "commonjs",
     "moduleResolution": "node",
+    "lib": [
+      "es2015",
+      "dom"
+    ],
+    "types": [
+      "node",
+      "jasmine"
+    ],
     "sourceMap": true,
     "noEmitHelpers": true,
     "emitDecoratorMetadata": true,
