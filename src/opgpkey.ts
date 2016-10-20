@@ -62,15 +62,17 @@ export interface OpgpKeySpec {
  */
 export type OpgpKey = RootKey | SecKey | PubKey
 
-export type RootKey = RootAuthKey | RootCodeKey | RootUniKey
+export type RootKey = RootAuthKey | RootCodeKey | RootGenericKey
 
-export type SecKey = SecAuthKey | SecCodeKey | SecUniKey
+export type SecKey = SecAuthKey | SecCodeKey | SecGenericKey
 
-export interface RootAuthKey extends SecAuthKey, Belongings {}
+export type PubKey = PubAuthKey | PubCodeKey | PubGenericKey
 
-export interface RootCodeKey extends SecCodeKey, Belongings {}
+export interface RootAuthKey extends SecAuthKey, RootKeyCommon {}
 
-export interface RootUniKey extends SecUniKey, Belongings {}
+export interface RootCodeKey extends SecCodeKey, RootKeyCommon {}
+
+export interface RootGenericKey extends SecGenericKey, RootKeyCommon {}
 
 /**
  * @public
@@ -88,7 +90,7 @@ export interface RootUniKey extends SecUniKey, Belongings {}
  *
  * @see {Concealable}
  */
-export interface Belongings {
+export interface RootKeyCommon {
   /**
    * @public
    * list of private subkey instances of this {Extendable}
@@ -118,19 +120,19 @@ export interface SecCodeKey extends Lockable, Decodable {
 	publicKey: PubCodeKey
 }
 
-export interface SecUniKey extends Lockable, Decodable, Signable {
+export interface SecGenericKey extends Lockable, Decodable, Signable {
   /**
    * @public
    * public component of this {Lockable}
    */
-	publicKey: PubKey
+	publicKey: PubGenericKey
 }
 
-export interface PubAuthKey extends Exposable, Verifiable {}
+export interface PubAuthKey extends KeyBase, Verifiable {}
 
-export interface PubCodeKey extends Exposable, Encodable {}
+export interface PubCodeKey extends KeyBase, Encodable {}
 
-export interface PubKey extends Exposable, Encodable, Verifiable {}
+export interface PubGenericKey extends KeyBase, Encodable, Verifiable {}
 
 /**
  * @public
@@ -163,7 +165,7 @@ export interface PubKey extends Exposable, Encodable, Verifiable {}
  * @see {Lockable#lock}
  * @see {Lockable#unlock}
  */
-export interface Lockable extends Exposable {
+export interface Lockable extends KeyBase {
   /**
    * @public
    * @param  {string} secret passphrase
@@ -270,7 +272,7 @@ export interface DecodeOpts {}
  * @public
  * public key interface
  */
-export interface Exposable extends Identifiable {
+export interface KeyBase extends Identifiable {
   /**
    * @public
    * @returns string JSON representation of this {Exposable}
@@ -306,7 +308,7 @@ export interface Identifiable {
   expiry: number
 }
 
-class ExposableKeyClass implements Exposable {
+class KeyBaseClass implements KeyBase {
   /**
    * @public
    * @see OpgpKeyFactory
@@ -405,7 +407,7 @@ class ExposableKeyClass implements Exposable {
   protected _handle : string
 }
 
-class PubAuthKeyClass extends ExposableKeyClass implements PubAuthKey {
+class PubAuthKeyClass extends KeyBaseClass implements PubAuthKey {
   /**
    * @public
    * @see Verifiable#verify
@@ -419,11 +421,12 @@ class PubAuthKeyClass extends ExposableKeyClass implements PubAuthKey {
   }
 }
 
-class PubCodingKeyClass extends ExposableKeyClass implements PubCodeKey {
+class PubCodingKeyClass extends KeyBaseClass implements PubCodeKey {
   /**
    * @public
    * @see Encodable#encode
-   */	encode (src: string): Promise<string> {
+   */
+  encode (src: string): Promise<string> {
 		return // TODO
 	}
 
@@ -432,38 +435,38 @@ class PubCodingKeyClass extends ExposableKeyClass implements PubCodeKey {
   }
 }
 
-class PubUniKeyClass extends ExposableKeyClass implements PubKey {
+class PubGenericKeyClass extends KeyBaseClass implements PubGenericKey {
   /**
    * @param  {any} key
-   * @returns boolean true if {this} is a universal key
+   * @returns boolean true if {this} is a generic key
    */
-  static isUniversalKey (key: any): boolean {
-    if (key && (key.publicKey instanceof ExposableKeyClass)) {
-      return PubUniKeyClass.isUniversalKey(key.publicKey)
+  static isGenericKey (key: any): boolean {
+    if (key && (key.publicKey instanceof KeyBaseClass)) {
+      return PubGenericKeyClass.isGenericKey(key.publicKey)
     }
-    return (key && (key instanceof PubUniKeyClass))
+    return (key && (key instanceof PubGenericKeyClass))
   }
 
   /**
    * @public
    * @see Verifiable#verify
    */
-	verify: (src: string) => Promise<string>
+	verify: (src: string) => Promise<string> // placeholder for mixin
 
   /**
    * @public
    * @see Encodable#encode
    */
-	encode: (src: string) => Promise<string>
+	encode: (src: string) => Promise<string> // placeholder for mixin
 
   constructor (spec: PublishableKeySpec) {
 		super(spec)
 	}
 }
 
-mixin (PubUniKeyClass, PubAuthKeyClass, PubCodingKeyClass)
+mixin (PubGenericKeyClass, PubAuthKeyClass, PubCodingKeyClass)
 
-class LockableKeyClass extends ExposableKeyClass implements Lockable {
+class LockableKeyClass extends KeyBaseClass implements Lockable {
   /**
    * @public
    * @see Lockable#lock
@@ -504,7 +507,7 @@ class SecAuthKeyClass extends LockableKeyClass implements SecAuthKey {
 
 	constructor (spec: LockableKeySpec) {
 		super(spec)
-    const publicKey = ExposableKeyClass.getInstance(spec.publicKey)
+    const publicKey = KeyBaseClass.getInstance(spec.publicKey)
     Object.defineProperties(this, {
       publicKey: { value: publicKey, enumerable: true },
       isLocked: { value: spec.isLocked, enumerable: false }
@@ -525,7 +528,7 @@ class SecCodingKeyClass extends LockableKeyClass implements SecCodeKey {
 
 	constructor (spec: LockableKeySpec) {
 		super(spec)
-    const publicKey = ExposableKeyClass.getInstance(spec.publicKey)
+    const publicKey = KeyBaseClass.getInstance(spec.publicKey)
     Object.defineProperties(this, {
       publicKey: { value: publicKey, enumerable: true },
       isLocked: { value: spec.isLocked, enumerable: false }
@@ -533,24 +536,24 @@ class SecCodingKeyClass extends LockableKeyClass implements SecCodeKey {
 	}
 }
 
-class SecUniKeyClass extends LockableKeyClass implements SecUniKey {
+class SecGenericKeyClass extends LockableKeyClass implements SecGenericKey {
   /**
    * @public
    * @see Signable#sign
    */
-	sign: (src: string) => Promise<string>
+	sign: (src: string) => Promise<string> // placeholder for mixin
 
   /**
    * @public
    * @see Decodable#decode
    */
-	decode: (src: string) => Promise<string>
+	decode: (src: string) => Promise<string> // placeholder for mixin
 
-  publicKey: PubKey
+  publicKey: PubGenericKey
 
 	constructor (spec: LockableKeySpec) {
 		super(spec)
-    const publicKey = ExposableKeyClass.getInstance(spec.publicKey)
+    const publicKey = KeyBaseClass.getInstance(spec.publicKey)
     Object.defineProperties(this, {
       publicKey: { value: publicKey, enumerable: true },
       isLocked: { value: spec.isLocked, enumerable: false }
@@ -558,7 +561,7 @@ class SecUniKeyClass extends LockableKeyClass implements SecUniKey {
 	}
 }
 
-mixin(SecUniKeyClass, SecAuthKeyClass, SecCodingKeyClass)
+mixin(SecGenericKeyClass, SecAuthKeyClass, SecCodingKeyClass)
 
 /**
  * @private
@@ -604,4 +607,4 @@ interface LockableKeySpec extends PublishableKeySpec {
  * @public
  * @see OpgpKeyFactory
  */
-export const getOpgpKey: OpgpKeyFactory = ExposableKeyClass.getInstance
+export const getOpgpKey: OpgpKeyFactory = KeyBaseClass.getInstance
