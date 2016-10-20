@@ -1,6 +1,4 @@
-/// <reference path="../typings/index.d.ts" />
-
-/**
+/*
  * Copyright 2016 Stephane M. Catala
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -68,8 +66,6 @@ export type RootKey = RootAuthKey | RootCodeKey | RootUniKey
 
 export type SecKey = SecAuthKey | SecCodeKey | SecUniKey
 
-export type PubKey = PubAuthKey | PubCodeKey | PubUniKey
-
 export interface RootAuthKey extends SecAuthKey, Belongings {}
 
 export interface RootCodeKey extends SecCodeKey, Belongings {}
@@ -127,14 +123,14 @@ export interface SecUniKey extends Lockable, Decodable, Signable {
    * @public
    * public component of this {Lockable}
    */
-	publicKey: PubUniKey
+	publicKey: PubKey
 }
 
 export interface PubAuthKey extends Exposable, Verifiable {}
 
 export interface PubCodeKey extends Exposable, Encodable {}
 
-export interface PubUniKey extends Exposable, Encodable, Verifiable {}
+export interface PubKey extends Exposable, Encodable, Verifiable {}
 
 /**
  * @public
@@ -436,7 +432,7 @@ class PubCodingKeyClass extends ExposableKeyClass implements PubCodeKey {
   }
 }
 
-class PubUniKeyClass extends ExposableKeyClass implements PubUniKey {
+class PubUniKeyClass extends ExposableKeyClass implements PubKey {
   /**
    * @param  {any} key
    * @returns boolean true if {this} is a universal key
@@ -550,7 +546,7 @@ class SecUniKeyClass extends LockableKeyClass implements SecUniKey {
    */
 	decode: (src: string) => Promise<string>
 
-  publicKey: PubUniKey
+  publicKey: PubKey
 
 	constructor (spec: LockableKeySpec) {
 		super(spec)

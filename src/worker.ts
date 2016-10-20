@@ -1,6 +1,4 @@
-/// <reference path="../typings/index.d.ts" />
-
-/**
+/*
  * Copyright 2016 Stephane M. Catala
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +20,7 @@ import {
   BehaviorSubject,
   Observer
 } from '@reactivex/rxjs'
-import openpgp = require('openpgp')
+const openpgp = require('openpgp')
 
 /**
  * processes message events from main thread.
